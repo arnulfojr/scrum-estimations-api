@@ -1,0 +1,32 @@
+version: '3.5'
+services:
+
+  server:
+    command:
+      - develop
+    expose:
+      - 8000
+    ports:
+      - 8000:8000
+      - 6899:6899
+    volumes:
+      - ./requirements-dev.txt:/app/requirements-dev.txt
+      - ./entrypoint.sh:/app/entrypoint.sh
+      - ./bin/:/app/bin/
+      - ./src/:/app/src/
+      - ./migrations/:/app/migrations/
+
+  migrations:
+    command:
+      - migrate
+    volumes:
+      - ./bin/:/app/bin/
+      - ./src/:/app/src/
+      - ./migrations/:/app/migrations/
+
+  db:
+    volumes:
+      - estimations-db:/var/lib/mysql
+
+volumes:
+  estimations-db:

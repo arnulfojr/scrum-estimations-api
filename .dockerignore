@@ -1,0 +1,6 @@
+*.swp
+*.pyc
+__pycache__
+.flake8
+.git
+env.d/

@@ -1,0 +1,20 @@
+[flake8]
+ignore =
+    W391,
+    E402,
+    # ignore definition docstring, as not all of the definitions require it
+    D103,
+    # ignore package docstring, as module docstring is much accurate
+    D104,
+    # ignore docstring in __init__ methods
+    D107
+import-order-style = edited
+application-import-names = organizations,estimations,users,settings,health,common
+max-line-length = 100
+max-complexity = 8
+exclude =
+    # No need to traverse our git directory
+    .git,
+    # There's no value in checking cache directories
+    __pycache__
+

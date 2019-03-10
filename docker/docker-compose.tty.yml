@@ -1,0 +1,10 @@
+version: '3'
+services:
+  mycli:
+    image: python:3.7-alpine
+    networks:
+      - scrum-apis
+networks:
+  scrum-apis:
+    external:
+      name: scrum-apis

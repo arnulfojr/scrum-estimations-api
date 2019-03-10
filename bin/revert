@@ -1,0 +1,11 @@
+#!/usr/local/bin/python
+"""Migrate script."""
+from common.db import database
+from peewee_moves import DatabaseManager
+
+
+manager = DatabaseManager(database)
+
+
+if __name__ == '__main__':
+    manager.downgrade()
