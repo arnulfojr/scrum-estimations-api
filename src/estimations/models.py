@@ -110,7 +110,7 @@ class Task(MixinModel, peewee.Model):
 
     id = peewee.UUIDField(primary_key=True, default=uuid4)
 
-    name = peewee.CharField()
+    name = peewee.CharField(index=True)
 
     session = peewee.ForeignKeyField(Session, related_name='tasks')
 
@@ -151,6 +151,8 @@ class EstimationSummary(MixinModel, peewee.Model):
     """Estimation summary."""
 
     task = peewee.ForeignKeyField(Task, related_name='summaries')
+
+    final_value = peewee.ForeignKeyField(Step)
 
     average = peewee.DecimalField()
 
