@@ -16,17 +16,17 @@ install:
 lint:
 	# lint check (flake)
 	docker run --rm \
-		--workdir /app/bin/ \
-		--env-file ${PWD}/.env.local \
+		--workdir /app \
 		-e APP_DIR=/app \
 		-e CONF_DIR=/app/conf \
 		--volume ${PWD}/.flake8:/app/.flake8 \
+		--volume ${PWD}/requirements-lint.txt:/app/requirements-lint.txt \
 		--volume ${PWD}/bin/:/app/bin/ \
 		--volume ${PWD}/conf/:/app/conf/ \
 		--volume ${PWD}/migrations/:/app/migrations/ \
 		--volume ${PWD}/src/:/app/src/ \
 		--entrypoint /bin/sh \
-		python:3.7-alpine /app/bin/check.sh
+		python:3.7-alpine /app/bin/lint
 .PHONY: lint
 
 build:
