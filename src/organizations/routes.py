@@ -1,7 +1,9 @@
 from aiohttp import web
 from aiohttp.web import Request
 from aiohttp.web import RouteTableDef
+from cerberus import Validator
 
+from organizations import schemas
 from organizations.models import Organization
 from users.models import User
 
@@ -9,6 +11,8 @@ from . import helpers
 
 
 router = RouteTableDef()
+
+validator = Validator()
 
 
 @router.route('GET', '/{org_id}')
@@ -26,6 +30,8 @@ async def get_organizations(request: Request):
 @router.route('POST', '/')
 async def create_organization(request: Request):
     payload = await request.json()
+    if not validator.validate(payload, schemas.CREATE_ORGANIZATION):
+        return web.json_response(validator.errors, status=400)
 
     organization = await Organization.create_from(payload)
 
@@ -64,6 +70,9 @@ async def add_user_to_organization(request: Request):
         }, status=404)
 
     payload = await request.json()
+    if not validator.validate(payload, schemas.JOIN_ORGANIZATION):
+        return web.json_response(validator.errors, status=400)
+
     user = payload.get('user', dict())
     if not user:
         return web.json_response({

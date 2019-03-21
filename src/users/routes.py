@@ -1,11 +1,15 @@
 from aiohttp import web
 from aiohttp.web import Request
 from aiohttp.web import RouteTableDef
+from cerberus import Validator
 
 from users.models import User
+from users.schemas import CREATE_USER_SCHEMA
 
 
 router = RouteTableDef()
+
+validator = Validator()
 
 
 @router.route('GET', '/{user_id}')
@@ -42,6 +46,8 @@ async def get_user_with_organizations(request: Request):
 @router.route('POST', '/')
 async def create_user(request: Request):
     payload = await request.json()
+    if not validator.validate(payload, CREATE_USER_SCHEMA):
+        return web.json_response(validator.errors, status=400)
 
     user = await User.create_from(payload)
     if not user:
