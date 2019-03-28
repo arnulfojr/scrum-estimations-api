@@ -38,13 +38,15 @@ class Sequence(MixinModel, peewee.Model):
 
 
 class Value(MixinModel, peewee.Model):
-    """Estimation step."""
+    """Estimation value."""
 
-    sequence = peewee.ForeignKeyField(Sequence, related_name='estimation_steps')
+    id = peewee.UUIDField(primary_key=True, default=uuid4)
 
-    previous_step = peewee.ForeignKeyField('self', null=True)
+    sequence = peewee.ForeignKeyField(Sequence, related_name='estimation_values')
 
-    next_step = peewee.ForeignKeyField('self', null=True)
+    previous = peewee.ForeignKeyField('self', null=True)
+
+    next = peewee.ForeignKeyField('self', null=True)
 
     name = peewee.CharField(null=True)
 
@@ -60,13 +62,13 @@ class Value(MixinModel, peewee.Model):
 
         database = database
 
-        db_table = 'estimation_steps'
+        db_table = 'estimation_values'
 
 
 class Session(MixinModel, peewee.Model):
     """Estimations Session."""
 
-    created_at = peewee.TimestampField(default=datetime.now)
+    id = peewee.UUIDField(primary_key=True, default=uuid4)
 
     name = peewee.CharField()
 
@@ -74,9 +76,11 @@ class Session(MixinModel, peewee.Model):
 
     sequence = peewee.ForeignKeyField(Sequence, related_name='sessions')
 
-    completed = peewee.BooleanField()
+    completed = peewee.BooleanField(default=False)
 
     completed_at = peewee.TimestampField(null=True)
+
+    created_at = peewee.TimestampField(default=datetime.now)
 
     class Meta:
 
