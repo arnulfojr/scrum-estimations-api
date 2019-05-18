@@ -2,6 +2,7 @@ version: '3.5'
 services:
 
   server:
+    container_name: estimations-api
     command:
       - develop
     expose:
@@ -17,6 +18,7 @@ services:
       - ./migrations/:/app/migrations/
 
   migrations:
+    container_name: estimations_migrator
     command:
       - migrate
     volumes:
