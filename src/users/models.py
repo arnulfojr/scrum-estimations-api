@@ -80,6 +80,16 @@ class User(MixinModel, peewee.Model):
         else:
             return user
 
+    def update_from(self, *, email: str = '', name: str = '',
+                    password: str = '', role: str = '', **kwargs):
+        """Update user from the given data."""
+        self.email = email or self.email
+        self.name = name or self.name
+        self.password = password or self.password
+        self.role = role or self.role
+
+        return self
+
     def dict_dump(self, with_organization: bool = False):
         """Dump the object to a primitive dictionary."""
         user = {

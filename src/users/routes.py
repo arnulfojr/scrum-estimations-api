@@ -60,9 +60,22 @@ async def create_user(request: Request):
     return web.json_response(data, status=201)
 
 
-@router.route('PUT', '/{user_id}')
+@router.route('PATCH', '/{user_id}')
 async def update_user(request):
-    pass  # TODO
+    user_id = request.match_info['user_id']
+    user = await User.get(user_id)
+    if not user:
+        return web.json_response({
+            'message': f'No user with ID {user_id} was found.',
+        }, status=404)
+
+    payload = await request.json()
+    user.update_from(**payload)
+
+    await user.put()
+
+    data = user.dict_dump()
+    return web.json_response(data, status=200)
 
 
 @router.route('DELETE', '/{user_id}')
@@ -70,7 +83,10 @@ async def delete_user(request: Request):
     user_id = request.match_info['user_id']
     user = await User.get(user_id)
     if not user:
-        return web.json_response({}, status=404)
+        return web.json_response({
+            'message': f'No user with ID {user_id} was found.',
+        }, status=404)
 
     await user.remove()
-    return web.json_response({}, status=204)
+
+    return web.json_response(None, status=204)

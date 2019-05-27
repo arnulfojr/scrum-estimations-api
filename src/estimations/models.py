@@ -17,10 +17,12 @@ from uuid import uuid4
 
 import peewee
 
-from common.db import database
+from common.db import database, manager
 from common.db import MixinModel
 from organizations.models import Organization
 from users.models import User
+
+from .exc import ResourceAlreadyExists
 
 
 class Sequence(MixinModel, peewee.Model):
@@ -36,6 +38,41 @@ class Sequence(MixinModel, peewee.Model):
 
         db_table = 'sequences'
 
+    @classmethod
+    async def get(cls, name: str):
+        """Return the sequence by name."""
+        try:
+            sequence = await manager.get(cls, name=name)
+        except cls.DoesNotExist:
+            return None
+        else:
+            return sequence
+
+    @classmethod
+    async def all(cls):
+        """Return all instances."""
+        query = cls.select()
+
+        results = await manager.execute(query)
+
+        sequences = [seq for seq in results]
+        return sequences
+
+    @classmethod
+    async def from_data(cls, *, name: str):
+        try:
+            instance = await manager.create(cls, name=name)
+        except peewee.IntegrityError as e:
+            raise ResourceAlreadyExists(f'Sequence with name {name} already exists') from e
+
+        return instance
+
+    def dump(self) -> dict:
+        return {
+            'name': self.name,
+            'created_at': self.created_at.isoformat(),
+        }
+
 
 class Value(MixinModel, peewee.Model):
     """Estimation value."""
@@ -44,9 +81,9 @@ class Value(MixinModel, peewee.Model):
 
     sequence = peewee.ForeignKeyField(Sequence, related_name='estimation_values')
 
-    previous = peewee.ForeignKeyField('self', null=True)
+    previous = peewee.ForeignKeyField('self', null=True, related_name='next_value')
 
-    next = peewee.ForeignKeyField('self', null=True)
+    next = peewee.ForeignKeyField('self', null=True, related_name='previous_value')
 
     name = peewee.CharField(null=True)
 
@@ -63,6 +100,25 @@ class Value(MixinModel, peewee.Model):
         database = database
 
         db_table = 'estimation_values'
+
+    @classmethod
+    async def get_from_sequence(cls, sequence: Sequence):
+        prev_values = cls.select().alias()
+        next_values = cls.select().alias()
+        query = cls.select()
+        query = query.join(prev_values, on=(cls.previous == cls.id))
+        query = query.join(next_values, on=(cls.next == cls.id))
+        query = query.join(Sequence, on=(cls.sequence.name == Sequence.name))
+        query = query.where(cls.sequence.name == sequence.name)
+
+        from pudb.remote import set_trace
+        set_trace(term_size=(120, 64))
+
+        results = await manager.execute(query)
+        return [value for value in results]
+
+    async def from_data(cls, *, sequence: Sequence, previous, next, name: str, value: int):
+        pass
 
 
 class Session(MixinModel, peewee.Model):
