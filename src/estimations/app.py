@@ -1,9 +1,7 @@
-from aiohttp.web import Application
-
-from .routes import routes
+from flask import Blueprint
 
 
-EstimationsApp = Application()
+EstimationsApp = Blueprint('estimations', __name__)
 
 
-EstimationsApp.router.add_routes(routes)
+from . import routes  # noqa: F401

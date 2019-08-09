@@ -1,16 +1,11 @@
-from aiohttp import web
+from flask import Blueprint
 
 
-router = web.RouteTableDef()
+HealthApp = Blueprint('health_check', __name__)
 
 
-@router.get('/healthz')
-async def health_check(request):
-    return web.json_response({
+@HealthApp.route('/healthz', methods=['GET'])
+def health_check(request):
+    return {
         'status': 'OK',
-    })
-
-
-HealthApp = web.Application()
-
-HealthApp.add_routes(router)
+    }

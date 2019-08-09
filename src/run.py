@@ -1,25 +1,28 @@
-from aiohttp import web
+from flask import Flask
 
-from estimations.app import EstimationsApp
+from common import db
+from estimations.app import EstimationsApp  # noqa
 from health import HealthApp
 from organizations.app import OrganizationsApp
-from settings.app import ACCESS_LOG_FORMAT, HOST, PORT
 from users.app import UsersApp
 
 
-App = web.Application()
-
-# - register sub applications - #
-App.add_subapp('/selfz', HealthApp)
-
-App.add_subapp('/estimations', EstimationsApp)
-
-App.add_subapp('/users', UsersApp)
-
-App.add_subapp('/organizations', OrganizationsApp)
+App = Flask(__name__)
 
 
-if __name__ == '__main__':
-    web.run_app(App, host=HOST,
-                port=PORT,
-                access_log=ACCESS_LOG_FORMAT)
+@App.before_request
+def setup_database():
+    db.connect()
+
+
+@App.after_request
+def clean_up(exc):
+    db.close(exc)
+
+
+# - register Blueprints - #
+App.register_blueprint(HealthApp, url_prefix='/selfz')
+
+App.register_blueprint(UsersApp, '/users')
+
+App.register_blueprint(OrganizationsApp, '/organizations')

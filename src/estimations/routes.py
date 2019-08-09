@@ -1,82 +1,68 @@
-from aiohttp import web
-from aiohttp.web import RouteTableDef
+from http import HTTPStatus
+
+from flask import jsonify, make_response, request
 
 from . import models
-from .exc import ResourceAlreadyExists
+from .app import EstimationsApp
+from .exc import ResourceAlreadyExists, ResourceNotFound
 
 
-routes = RouteTableDef()
+@EstimationsApp.route('/sequences', methods=['GET'])
+def get_all_sequences():
+    sequences = models.Sequence.all()
+
+    return [sequence.dump() for sequence in sequences]
 
 
-@routes.route('GET', '/sequences')
-async def get_all_sequences(request):
-    sequences = await models.Sequence.all()
-
-    return web.json_response([sequence.dump() for sequence in sequences],
-                             status=200)
-
-
-@routes.route('POST', '/sequences')
-async def create_sequence(request):
-    payload = await request.json()
+@EstimationsApp.route('/sequences', methods=['POST'])
+def create_sequence():
+    payload = request.get_json()
 
     try:
-        sequence = await models.Sequence.from_data(**payload)
+        sequence = models.Sequence.from_data(**payload)
     except ResourceAlreadyExists as e:
-        return web.json_response({
+        return make_response(jsonify({
             'message': str(e),
-        }, status=422)
+        }), HTTPStatus.UNPROCESSABLE_ENTITY)
+    else:
+        return make_response(
+            jsonify(sequence.dump()),
+            HTTPStatus.CREATED,
+        )
 
-    return web.json_response(sequence.dump(), status=201)
 
-
-@routes.route('GET', '/sequences/{name}')
-async def get_sequence(request):
-    name = request.match_info['name']
+@EstimationsApp.route('/sequences/<name>', methods=['GET'])
+def get_sequence(name: str):
     if not name:
-        return web.json_response({
+        return make_response(jsonify({
             'message': 'Please provide a sequence identifier.',
-        }, status=404)
+        }), HTTPStatus.NOT_FOUND)
 
-    sequence = await models.Sequence.get(name)
-    if not sequence:
-        return web.json_response({
-            'message': f'No sequence named {name} was found',
-        }, status=404)
+    sequence = models.Sequence.lookup(name)
 
-    return web.json_response(sequence.dump(), status=200)
+    return make_response(jsonify(sequence.dump()), HTTPStatus.OK)
 
 
-@routes.route('DELETE', '/sequences/{name}')
-async def remove_sequence(request):
-    name = request.match_info['name']
+@EstimationsApp.route('/sequences/<name>', methods=['DELETE'])
+def remove_sequence(name: str):
     if not name:
-        return web.json_response({
+        return make_response(jsonify({
             'message': 'Please provide a sequence identifier.',
-        }, status=404)
+        }), HTTPStatus.NOT_FOUND)
 
-    sequence = await models.Sequence.get(name)
-    if not sequence:
-        return web.json_response({
-            'message': f'No sequence named {name} was found',
-        }, status=404)
+    sequence = models.Sequence.lookup(name)
+    sequence.delete_instance()
 
-    await sequence.remove()
-
-    return web.json_response(None, status=204)
+    return make_response(jsonify(None), HTTPStatus.NO_CONTENT)
 
 
-@routes.route('GET', '/sequences/{name}/values')
-async def get_sequence_values(request):
-    name = request.match_info['name']
+@EstimationsApp.route('/sequences/<name>/values', methods=['GET'])
+def get_sequence_values(name: str):
     if not name:
-        return web.json_response({
+        return make_response(jsonify({
             'message': 'Please provide a sequence identifier.',
-        }, status=404)
+        }), HTTPStatus.NOT_FOUND)
 
-    sequence = await models.Sequence.get(name)
-    if not sequence:
-        return web.json_response({
-            'message': f'No sequence named {name} was found',
-        }, status=404)
-    values = await models.Value.get_from_sequence(sequence)
+    sequence = models.Sequence.lookup(name)
+    models.Value.get_from_sequence(sequence)
+    # TODO: continue

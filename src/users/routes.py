@@ -1,92 +1,76 @@
-from aiohttp import web
-from aiohttp.web import Request
-from aiohttp.web import RouteTableDef
+from http import HTTPStatus
+
 from cerberus import Validator
+from flask import jsonify, make_response, request
 
 from users.models import User
 from users.schemas import CREATE_USER_SCHEMA
 
-
-router = RouteTableDef()
-
-validator = Validator()
+from .app import UsersApp
+from .exceptions import NotFound
 
 
-@router.route('GET', '/{user_id}')
-async def get_user(request: Request):
+@UsersApp.errorhandler(NotFound)
+def handle_user_not_found(error: NotFound):
+    return make_response(jsonify({
+        'message': str(error),
+    }), HTTPStatus.NOT_FOUND)
+
+
+@UsersApp.route('/<user_id>', methods=['GET'])
+def get_user(user_id: str):
     """Get the user's information."""
-    user_id = request.match_info['user_id']
-    user = await User.get(user_id)
-    if not user:
-        return web.json_response({
-            'message': 'The user does not exist.',
-        }, status=404)
-
-    return web.json_response(user.dict_dump())
+    user = User.lookup(user_id)
+    return make_response(jsonify(user.dict_dump()), HTTPStatus.OK)
 
 
-@router.route('GET', '/{user_id}/organizations')
-async def get_user_with_organizations(request: Request):
+@UsersApp.route('/<user_id>/organizations', methods=['GET'])
+def get_user_with_organizations(user_id: str):
     """Get the user's information."""
-    user_id = request.match_info['user_id']
-    user = await User.get(user_id)
-    if not user:
-        return web.json_response({
-            'message': 'The user does not exist.',
-        }, status=404)
-
+    user = User.lookup(user_id)
     if not user.organization:
-        return web.json_response({
+        response = make_response(jsonify({
             'message': 'The user does not have an organization.',
-        }, status=404)
+        }), HTTPStatus.NOT_FOUND)
+        return response
 
-    return web.json_response(user.organization.dict_dump())
+    return user.organization.dict_dump()
 
 
-@router.route('POST', '/')
-async def create_user(request: Request):
-    payload = await request.json()
+@UsersApp.route('/', methods=['POST'])
+def create_user():
+    payload = request.get_json()
+
+    validator = Validator()
     if not validator.validate(payload, CREATE_USER_SCHEMA):
-        return web.json_response(validator.errors, status=400)
+        return make_response(jsonify(validator.errors),
+                             HTTPStatus.BAD_REQUEST)
 
-    user = await User.create_from(payload)
-    if not user:
-        return web.json_response({
-            'message': 'Validation error',
-        }, status=400)
-
-    data = user.dict_dump()
-
-    return web.json_response(data, status=201)
+    user = User.create_from(payload)
+    return make_response(
+        jsonify(user.dict_dump(with_organization=True)),
+        HTTPStatus.CREATED,
+    )
 
 
-@router.route('PATCH', '/{user_id}')
-async def update_user(request):
-    user_id = request.match_info['user_id']
-    user = await User.get(user_id)
-    if not user:
-        return web.json_response({
-            'message': f'No user with ID {user_id} was found.',
-        }, status=404)
+@UsersApp.route('/<user_id>', methods=['PATCH'])
+def update_user(user_id: str):
+    user = User.lookup(user_id)
 
-    payload = await request.json()
+    payload = request.get_json()
     user.update_from(**payload)
+    user.save()
 
-    await user.put()
+    return make_response(
+        jsonify(user.dict_dump(with_organization=True)),
+        HTTPStatus.OK,
+    )
 
-    data = user.dict_dump()
-    return web.json_response(data, status=200)
 
+@UsersApp.route('/<user_id>', methods=['DELETE'])
+def delete_user(user_id: str):
+    user = User.lookup(user_id)
 
-@router.route('DELETE', '/{user_id}')
-async def delete_user(request: Request):
-    user_id = request.match_info['user_id']
-    user = await User.get(user_id)
-    if not user:
-        return web.json_response({
-            'message': f'No user with ID {user_id} was found.',
-        }, status=404)
+    user.delete_instance()
 
-    await user.remove()
-
-    return web.json_response(None, status=204)
+    return make_response(jsonify(None), HTTPStatus.NO_CONTENT)

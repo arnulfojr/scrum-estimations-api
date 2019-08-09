@@ -13,19 +13,19 @@ Here is a short story of the models:
         The name (optionally) can be used to abstract away the numeric value.
 """
 from datetime import datetime
+from typing import List, Optional
 from uuid import uuid4
 
 import peewee
 
-from common.db import database, manager
-from common.db import MixinModel
+from common.db import database
 from organizations.models import Organization
 from users.models import User
 
-from .exc import ResourceAlreadyExists
+from .exc import ResourceAlreadyExists, SequenceNotFound
 
 
-class Sequence(MixinModel, peewee.Model):
+class Sequence(peewee.Model):
     """Sequence model."""
 
     name = peewee.CharField(primary_key=True)
@@ -39,33 +39,30 @@ class Sequence(MixinModel, peewee.Model):
         db_table = 'sequences'
 
     @classmethod
-    async def get(cls, name: str):
+    def lookup(cls, name: str) -> 'Sequence':
         """Return the sequence by name."""
+        query = cls.select().where(cls.name == name)
         try:
-            sequence = await manager.get(cls, name=name)
-        except cls.DoesNotExist:
-            return None
+            sequence = query.get()
+        except cls.DoesNotExist as e:
+            raise SequenceNotFound(f'Sequence with name {name} was not found') from e
         else:
             return sequence
 
     @classmethod
-    async def all(cls):
+    def all(cls) -> List['Sequence']:
         """Return all instances."""
         query = cls.select()
-
-        results = await manager.execute(query)
-
-        sequences = [seq for seq in results]
-        return sequences
+        return list(query)
 
     @classmethod
-    async def from_data(cls, *, name: str):
+    def from_data(cls, *, name: str) -> 'Sequence':
         try:
-            instance = await manager.create(cls, name=name)
+            instance = cls.create(name=name)
         except peewee.IntegrityError as e:
             raise ResourceAlreadyExists(f'Sequence with name {name} already exists') from e
-
-        return instance
+        else:
+            return instance
 
     def dump(self) -> dict:
         return {
@@ -74,7 +71,7 @@ class Sequence(MixinModel, peewee.Model):
         }
 
 
-class Value(MixinModel, peewee.Model):
+class Value(peewee.Model):
     """Estimation value."""
 
     id = peewee.UUIDField(primary_key=True, default=uuid4)
@@ -102,7 +99,7 @@ class Value(MixinModel, peewee.Model):
         db_table = 'estimation_values'
 
     @classmethod
-    async def get_from_sequence(cls, sequence: Sequence):
+    def get_from_sequence(cls, sequence: Sequence):
         prev_values = cls.select().alias()
         next_values = cls.select().alias()
         query = cls.select()
@@ -111,17 +108,15 @@ class Value(MixinModel, peewee.Model):
         query = query.join(Sequence, on=(cls.sequence.name == Sequence.name))
         query = query.where(cls.sequence.name == sequence.name)
 
-        from pudb.remote import set_trace
-        set_trace(term_size=(120, 64))
-
-        results = await manager.execute(query)
+        results = await manager.execute(query)  # FIXME: use the normal FK fields from peewee!
         return [value for value in results]
 
-    async def from_data(cls, *, sequence: Sequence, previous, next, name: str, value: int):
+    @classmethod
+    def from_data(cls, *, sequence: Sequence, previous, next, name: str, value: int):
         pass
 
 
-class Session(MixinModel, peewee.Model):
+class Session(peewee.Model):
     """Estimations Session."""
 
     id = peewee.UUIDField(primary_key=True, default=uuid4)
@@ -145,7 +140,7 @@ class Session(MixinModel, peewee.Model):
         db_table = 'sessions'
 
 
-class SessionMember(MixinModel, peewee.Model):
+class SessionMember(peewee.Model):
     """The session members."""
 
     session = peewee.ForeignKeyField(Session, related_name='session_members')
@@ -165,7 +160,7 @@ class SessionMember(MixinModel, peewee.Model):
         db_table = 'session_members'
 
 
-class Task(MixinModel, peewee.Model):
+class Task(peewee.Model):
     """Task model."""
 
     id = peewee.UUIDField(primary_key=True, default=uuid4)
@@ -183,7 +178,7 @@ class Task(MixinModel, peewee.Model):
         db_table = 'tasks'
 
 
-class Estimation(MixinModel, peewee.Model):
+class Estimation(peewee.Model):
     """Estimation of a user."""
 
     id = peewee.UUIDField(primary_key=True, default=uuid4)
@@ -207,7 +202,7 @@ class Estimation(MixinModel, peewee.Model):
         db_table = 'estimations'
 
 
-class EstimationSummary(MixinModel, peewee.Model):
+class EstimationSummary(peewee.Model):
     """Estimation summary."""
 
     task = peewee.ForeignKeyField(Task, related_name='summaries')
@@ -216,7 +211,7 @@ class EstimationSummary(MixinModel, peewee.Model):
 
     average = peewee.DecimalField()
 
-    concensus_met = peewee.BooleanField()
+    consensus_met = peewee.BooleanField()
 
     class Meta:
 

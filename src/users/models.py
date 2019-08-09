@@ -3,15 +3,15 @@
 Contains the models of all the users regarding the admin tool.
 """
 from datetime import datetime
+from typing import Optional
 from uuid import uuid4
 
 import peewee
 
 from common.db import database
-from common.db import manager
-from common.db import MixinModel
-from common.loggers import logger
 from organizations.models import Organization
+
+from .exceptions import NotFound
 
 
 DEFAULT_NAME = 'User'
@@ -23,7 +23,7 @@ ROLES = (
 )
 
 
-class User(MixinModel, peewee.Model):
+class User(peewee.Model):
     """User from the admin tool.
 
     This model relates to an organization.
@@ -51,34 +51,29 @@ class User(MixinModel, peewee.Model):
         db_table = 'users'
 
     @classmethod
-    async def get(cls, id):
-        user_query = cls.select().where(cls.id == id)
-        matches = await manager.prefetch(user_query,
-                                         Organization.select())
-        matches = list(matches)
-        if not matches:
-            return None
-        return matches[0]
+    def lookup(cls, identifier) -> Optional['User']:
+        user_query = cls.select().where(cls.id == identifier)
+        try:
+            user = user_query.get()
+        except cls.DoesNotExist as e:
+            raise NotFound(f'User with ID {identifier} was not found', e) from e
+        else:
+            return user
 
     @classmethod
-    async def create_from(cls, data: dict):
+    def create_from(cls, data: dict) -> 'User':
         email = data['email']
         name = data.get('name')
         password = data.get('password')
         role = data.get('role', ROLES[0])
         organization = data.get('organization')
 
-        try:
-            user = await manager.create(cls, email=email,
-                                        name=name,
-                                        password=password,
-                                        role=role,
-                                        organization=organization)
-        except peewee.InternalError as e:
-            logger.error(str(e))
-            return None
-        else:
-            return user
+        with database.atomic() as txn:
+            user = cls.create(email=email, name=name, password=password,
+                              role=role, organization=organization)
+            txn.commit()
+
+        return user
 
     def update_from(self, *, email: str = '', name: str = '',
                     password: str = '', role: str = '', **kwargs):
