@@ -5,11 +5,8 @@ Contains the models of all the users regarding the admin tool.
 from datetime import datetime
 from uuid import uuid4
 
-import peewee
+from tortoise.models import Model, fields
 
-from common.db import database
-from common.db import manager
-from common.db import MixinModel
 from common.loggers import logger
 from organizations.models import Organization
 
@@ -23,42 +20,31 @@ ROLES = (
 )
 
 
-class User(MixinModel, peewee.Model):
+class User(Model):
     """User from the admin tool.
 
     This model relates to an organization.
     """
-    id = peewee.UUIDField(primary_key=True, default=uuid4)
+    id = fields.IntField(pk=True)
 
-    email = peewee.CharField(null=False, unique=True)
+    email = fields.CharField(max_length=255, null=False, unique=True)
 
-    name = peewee.CharField(default=DEFAULT_NAME)
+    name = fields.CharField(max_length=255, default=DEFAULT_NAME)
 
-    password = peewee.CharField()
+    password = fields.CharField(max_length=255, null=False)
 
-    role = peewee.CharField(default=ROLES[0])
+    role = fields.CharField(max_length=255, default=ROLES[0])
 
-    organization = peewee.ForeignKeyField(Organization, related_name='users',
+    # TODO: support toroise in organizations
+    organization = fields.ForeignKeyField(Organization, related_name='users',
                                           db_column='organization',
                                           null=True, default=None)
 
-    registered_on = peewee.TimestampField(default=datetime.now)
+    registered_on = fields.DatetimeField(auto_now_add=True)
 
     class Meta:
 
-        database = database
-
-        db_table = 'users'
-
-    @classmethod
-    async def get(cls, id):
-        user_query = cls.select().where(cls.id == id)
-        matches = await manager.prefetch(user_query,
-                                         Organization.select())
-        matches = list(matches)
-        if not matches:
-            return None
-        return matches[0]
+        table = 'users'
 
     @classmethod
     async def create_from(cls, data: dict):
