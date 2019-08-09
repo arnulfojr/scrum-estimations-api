@@ -16,7 +16,7 @@ def connect(*args, **kwargs):
     database.connect()
 
 
-def close(exc, *args, **kwargs):
+def close(*args, **kwargs):
     global database
 
     if database and not database.is_closed():

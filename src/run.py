@@ -2,27 +2,27 @@ from flask import Flask
 
 from common import db
 from estimations.app import EstimationsApp  # noqa
-from health import HealthApp
-from organizations.app import OrganizationsApp
-from users.app import UsersApp
+from health import health_app
+from organizations.app import organizations_app
+from users.app import users_app
 
 
-App = Flask(__name__)
+app = Flask(__name__)
 
 
-@App.before_request
+@app.before_request
 def setup_database():
     db.connect()
 
 
-@App.after_request
+@app.teardown_request
 def clean_up(exc):
-    db.close(exc)
+    db.close()
 
 
 # - register Blueprints - #
-App.register_blueprint(HealthApp, url_prefix='/selfz')
+app.register_blueprint(health_app, url_prefix='/selfz')
 
-App.register_blueprint(UsersApp, '/users')
+app.register_blueprint(users_app, url_prefix='/users')
 
-App.register_blueprint(OrganizationsApp, '/organizations')
+app.register_blueprint(organizations_app, url_prefix='/organizations')

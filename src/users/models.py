@@ -38,8 +38,8 @@ class User(peewee.Model):
 
     role = peewee.CharField(default=ROLES[0])
 
-    organization = peewee.ForeignKeyField(Organization, related_name='users',
-                                          db_column='organization',
+    organization = peewee.ForeignKeyField(Organization, backref='users',
+                                          column_name='organization_id',
                                           null=True, default=None)
 
     registered_on = peewee.TimestampField(default=datetime.now)

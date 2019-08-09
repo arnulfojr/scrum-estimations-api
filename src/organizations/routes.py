@@ -9,12 +9,12 @@ from organizations.models import Organization
 from users.exceptions import NotFound as UserNotFound
 from users.models import User
 
-from .app import OrganizationsApp
+from .app import organizations_app
 from .exceptions import NotFound
 
 
-@OrganizationsApp.errorhandler(NotFound)
-@OrganizationsApp.errorhandler(UserNotFound)
+@organizations_app.errorhandler(NotFound)
+@organizations_app.errorhandler(UserNotFound)
 def handle_organization_not_found(error: Union[NotFound, UserNotFound]):
     return make_response(
         jsonify({
@@ -24,7 +24,7 @@ def handle_organization_not_found(error: Union[NotFound, UserNotFound]):
     )
 
 
-@OrganizationsApp.route('/<org_id>', methods=['GET'])
+@organizations_app.route('/<org_id>', methods=['GET'])
 def get_organizations(org_id: str):
     organization = Organization.lookup(org_id)
 
@@ -32,7 +32,7 @@ def get_organizations(org_id: str):
     return make_response(jsonify(payload), HTTPStatus.OK)
 
 
-@OrganizationsApp.route('/', methods=['POST'])
+@organizations_app.route('/', methods=['POST'])
 def create_organization():
     payload = request.get_json()
 
@@ -48,7 +48,7 @@ def create_organization():
     return make_response(jsonify(data), HTTPStatus.CREATED)
 
 
-@OrganizationsApp.route('/<org_id>', methods=['PATCH'])
+@organizations_app.route('/<org_id>', methods=['PATCH'])
 def update_organization(org_id: str):
     organization = Organization.lookup(org_id)
 
@@ -64,7 +64,7 @@ def update_organization(org_id: str):
     )
 
 
-@OrganizationsApp.route('/<org_id>/users', methods=['POST'])
+@organizations_app.route('/<org_id>/users', methods=['POST'])
 def add_user_to_organization(org_id: str):
     organization = Organization.lookup(org_id)
     payload = request.get_json()
@@ -91,7 +91,7 @@ def add_user_to_organization(org_id: str):
     )
 
 
-@OrganizationsApp.route('/<org_id>/users/<user_id>', methods=['DELETE'])
+@organizations_app.route('/<org_id>/users/<user_id>', methods=['DELETE'])
 def remove_user_from_organization(org_id: str, user_id: str):
     Organization.lookup(org_id)
     user = User.lookup(user_id)

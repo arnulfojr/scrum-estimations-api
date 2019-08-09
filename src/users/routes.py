@@ -6,25 +6,25 @@ from flask import jsonify, make_response, request
 from users.models import User
 from users.schemas import CREATE_USER_SCHEMA
 
-from .app import UsersApp
+from .app import users_app
 from .exceptions import NotFound
 
 
-@UsersApp.errorhandler(NotFound)
+@users_app.errorhandler(NotFound)
 def handle_user_not_found(error: NotFound):
     return make_response(jsonify({
         'message': str(error),
     }), HTTPStatus.NOT_FOUND)
 
 
-@UsersApp.route('/<user_id>', methods=['GET'])
+@users_app.route('/<user_id>', methods=['GET'])
 def get_user(user_id: str):
     """Get the user's information."""
     user = User.lookup(user_id)
     return make_response(jsonify(user.dict_dump()), HTTPStatus.OK)
 
 
-@UsersApp.route('/<user_id>/organizations', methods=['GET'])
+@users_app.route('/<user_id>/organizations', methods=['GET'])
 def get_user_with_organizations(user_id: str):
     """Get the user's information."""
     user = User.lookup(user_id)
@@ -37,7 +37,7 @@ def get_user_with_organizations(user_id: str):
     return user.organization.dict_dump()
 
 
-@UsersApp.route('/', methods=['POST'])
+@users_app.route('/', methods=['POST'])
 def create_user():
     payload = request.get_json()
 
@@ -53,7 +53,7 @@ def create_user():
     )
 
 
-@UsersApp.route('/<user_id>', methods=['PATCH'])
+@users_app.route('/<user_id>', methods=['PATCH'])
 def update_user(user_id: str):
     user = User.lookup(user_id)
 
@@ -67,7 +67,7 @@ def update_user(user_id: str):
     )
 
 
-@UsersApp.route('/<user_id>', methods=['DELETE'])
+@users_app.route('/<user_id>', methods=['DELETE'])
 def delete_user(user_id: str):
     user = User.lookup(user_id)
 

@@ -2,14 +2,15 @@ version: '3.5'
 services:
 
   server:
-    container_name: estimations-api
+    container_name: estimations_api
     command:
       - develop
-    expose:
-      - 8000
     ports:
-      - 8000:8000
+      - 5000:5000
       - 6899:6899
+    environment:
+      FLASK_ENV: development
+      FLASK_APP: run
     volumes:
       - ./requirements-dev.txt:/app/requirements-dev.txt
       - ./entrypoint.sh:/app/entrypoint.sh
@@ -25,8 +26,11 @@ services:
       - ./bin/:/app/bin/
       - ./src/:/app/src/
       - ./migrations/:/app/migrations/
+      - ./entrypoint.sh:/app/entrypoint.sh
 
   db:
+    ports:
+      - 3306:3306
     volumes:
       - estimations-db:/var/lib/mysql
 

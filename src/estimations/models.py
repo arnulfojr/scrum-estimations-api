@@ -108,8 +108,7 @@ class Value(peewee.Model):
         query = query.join(Sequence, on=(cls.sequence.name == Sequence.name))
         query = query.where(cls.sequence.name == sequence.name)
 
-        results = await manager.execute(query)  # FIXME: use the normal FK fields from peewee!
-        return [value for value in results]
+        return None
 
     @classmethod
     def from_data(cls, *, sequence: Sequence, previous, next, name: str, value: int):

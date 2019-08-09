@@ -1,6 +1,6 @@
 from flask import Blueprint
 
 
-UsersApp = Blueprint('users', __name__)
+users_app = Blueprint('users', __name__)
 
 from . import routes  # noqa
