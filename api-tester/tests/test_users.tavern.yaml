@@ -29,9 +29,17 @@ stages:
         role:
           - "{not_empty:s}"
 
+  - name: Create a new user with default role
+    request:
+      url: "http://{hostname:s}:5000/users/"
+      method: POST
+      json:
+        email: "{user_email:s}"
+        name: "{user_name:s}"
+        password: "{user_password:s}"
+
   - name: Test get user details for non-existent user
     request:
       url: "http://{hostname:s}:5000/users/{random_id:s}"
     response:
       status_code: 404
-
