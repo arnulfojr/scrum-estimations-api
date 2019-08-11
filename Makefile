@@ -36,6 +36,15 @@ run:
 		up
 .PHONY: run
 
+restart:
+	@docker-compose -f docker-compose.yml \
+		-f docker/docker-compose.local.yml \
+		restart server
+	@docker-compose -f docker-compose.yml \
+		-f docker/docker-compose.local.yml \
+		restart migrations
+.PHONY: restart
+
 run-local-api-test:
 	@rm -fv docker-compose.override.yml
 	@docker-compose -f docker-compose.yml \
