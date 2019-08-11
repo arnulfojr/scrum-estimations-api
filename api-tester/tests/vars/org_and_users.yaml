@@ -1,0 +1,12 @@
+---
+
+name: Variables for the user-organization life cycle
+description: All the variables here are used for creating users that belong an organization
+
+variables:
+  user1_email: user1@email.com
+  user1_name: User One
+  user2_email: user2@email.com
+  user2_name: User Two
+  organization_name: The Avenger's Organization gmbh
+  test_password: blabla

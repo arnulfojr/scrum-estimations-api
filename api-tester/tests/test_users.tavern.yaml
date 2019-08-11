@@ -3,8 +3,8 @@
 test_name: Testing the basic user endpoints for validation
 
 includes:
-  - !include common.yaml
-  - !include user_vars.yaml
+  - !include vars/common.yaml
+  - !include vars/user_vars.yaml
 
 stages:
 
@@ -34,8 +34,8 @@ stages:
 test_name: Testing the user registration lifecycle
 
 includes:
-  - !include common.yaml
-  - !include user_vars.yaml
+  - !include vars/common.yaml
+  - !include vars/user_vars.yaml
 
 stages:
   - name: Create a new user with default role and no organization

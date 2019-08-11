@@ -3,8 +3,8 @@
 test_name: Testing basic GET/POST endpoints for organizations
 
 includes:
-  - !include common.yaml
-  - !include org_vars.yaml
+  - !include vars/common.yaml
+  - !include vars/org_vars.yaml
 
 stages:
 
@@ -83,8 +83,8 @@ stages:
 test_name: Testing basic PATCH endpoints for organizations
 
 includes:
-  - !include common.yaml
-  - !include org_vars.yaml
+  - !include vars/common.yaml
+  - !include vars/org_vars.yaml
 
 stages:
   - name: Attempt to patch an unknown organization
