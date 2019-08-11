@@ -2,8 +2,12 @@
 
 set -e
 
-pip install --disable-pip-version-check -r ${APP_DIR}/requirements-lint.txt
+if [ -z "${APP_DIR}" ]; then
+  APP_DIR=$PWD
+  echo '-- APP_DIR was not set using PWD'
+fi
 
+pip install --disable-pip-version-check -r ${APP_DIR}/requirements-lint.txt
 
 flake8 --show-source --statistics ${APP_DIR}
 

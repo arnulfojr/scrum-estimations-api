@@ -4,7 +4,7 @@ from flask import jsonify, make_response, request
 
 from . import models
 from .app import EstimationsApp
-from .exc import ResourceAlreadyExists, ResourceNotFound
+from .exc import ResourceAlreadyExists
 
 
 @EstimationsApp.route('/sequences', methods=['GET'])

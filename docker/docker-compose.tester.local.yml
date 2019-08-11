@@ -1,0 +1,15 @@
+version: '3.5'
+services:
+  server:
+    command:
+      - develop
+    environment:
+      FLASK_ENV: development
+      FLASK_APP: run
+    volumes:
+      - ./requirements-dev.txt:/app/requirements-dev.txt
+
+  tester:
+    volumes:
+      - ./api-tester/tests/:/app/tests/
+      - ./api-tester/out/:/app/out/

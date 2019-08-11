@@ -3,7 +3,7 @@ import os
 
 SERVICE_NAME = os.environ['SERVICE_NAME']
 
-HOST = os.environ['HOSTNAME']
+HOSTNAME = HOST = os.environ['HOSTNAME']
 
 PORT = os.environ['PORT']
 

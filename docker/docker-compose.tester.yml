@@ -5,23 +5,13 @@ services:
   tester:
     build:
       context: ./api-tester
+    labels:
+      - Application=Tester
     image: tavern
     networks:
       - scrum-apis
     depends_on:
       - server
-    volumes:
-      - ./api-tester/tests/:/app/tests/
-      - ./api-tester/out/:/app/out/
-
-  server:
-    command:
-      - develop
-    environment:
-      FLASK_ENV: development
-      FLASK_APP: run
-    volumes:
-      - ./requirements-dev.txt:/app/requirements-dev.txt
 
 networks:
   scrum-apis:

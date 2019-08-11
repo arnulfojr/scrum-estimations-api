@@ -29,20 +29,26 @@ stages:
         role:
           - "{not_empty:s}"
 
-  - name: Create a new user with default role
+  - name: Create a new user with default role and no organization
     request:
       url: "http://{hostname:s}:5000/users/"
       method: POST
       json:
         email: "{user_email:s}"
         name: "{user_name:s}"
-        password: "{user_password:s}"
+        password: "{user_password:s}" # password is not returned
     response:
       status_code: 201
       body:
         email: "{user_email:s}"
+        id: !anystr
         name: "{user_name:s}"
-        password: "{user_password:s}"
+        organization: null
+        registered_on: !anystr
+        role: "USER"
+      save:
+        body:
+          registered_user: id
 
   - name: Test get user details for non-existent user
     request:

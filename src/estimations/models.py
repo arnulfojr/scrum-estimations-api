@@ -13,7 +13,7 @@ Here is a short story of the models:
         The name (optionally) can be used to abstract away the numeric value.
 """
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 from uuid import uuid4
 
 import peewee
