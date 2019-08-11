@@ -37,6 +37,12 @@ stages:
         email: "{user_email:s}"
         name: "{user_name:s}"
         password: "{user_password:s}"
+    response:
+      status_code: 201
+      body:
+        email: "{user_email:s}"
+        name: "{user_name:s}"
+        password: "{user_password:s}"
 
   - name: Test get user details for non-existent user
     request:
