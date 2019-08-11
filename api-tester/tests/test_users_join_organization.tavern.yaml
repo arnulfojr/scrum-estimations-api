@@ -1,0 +1,213 @@
+---
+
+test_name: Test the user's lifecycle for a user joining an organization
+
+includes:
+  - !include vars/common.yaml
+  - !include vars/org_and_users.yaml
+
+stages:
+  - name: Create an organization
+    request:
+      url: "http://{hostname:s}:5000/organizations/"
+      method: POST
+      json:
+        name: "{organization_name:s}"
+    response:
+      status_code: 201
+      body:
+        id: !anystr
+      save:
+        body:
+          created_organization_id: id
+
+  - name: Create user directly within organization as Admin
+    request:
+      url: "http://{hostname:s}:5000/users/"
+      method: POST
+      json:
+        email: "{user1_email:s}"
+        name: "{user1_name:s}"
+        password: "{test_password:s}"
+        role: "ADMIN"
+        organization: "{created_organization_id:s}"
+    response:
+      status_code: 201
+      body:
+        id: !anystr
+        name: "{user1_name:s}"
+        email: "{user1_email:s}"
+        role: "ADMIN"
+        registered_on: !anystr
+        organization:
+          id: "{created_organization_id:s}"
+          name: "{organization_name:s}"
+      save:
+        body:
+          user_1_id: id
+
+  - name: Check the organization has only 1 user so far
+    request:
+      url: "http://{hostname:s}:5000/organizations/{created_organization_id:s}"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        id: "{created_organization_id:s}"
+        name: "{organization_name:s}"
+        users:
+          - name: "{user1_name:s}"
+            id: "{user_1_id:s}"
+            email: "{user1_email:s}"
+            role: "ADMIN"
+            registered_on: !anystr
+
+  - name: Check the user has one organization
+    request:
+      url: "http://{hostname:s}:5000/users/{user_1_id}/organization"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        id: "{created_organization_id:s}"
+        name: "{organization_name:s}"
+        users:
+          - id: "{user_1_id}"
+            name: "{user1_name:s}"
+            email: "{user1_email:s}"
+            role: "ADMIN"
+            registered_on: !anystr
+
+  - name: Create a user without organization
+    request:
+      url: "http://{hostname:s}:5000/users/"
+      method: POST
+      json:
+        email: "{user2_email:s}"
+        name: "{user2_name:s}"
+        password: "{test_password:s}"
+    response:
+      status_code: 201
+      body:
+        id: !anystr
+        name: "{user2_name:s}"
+        email: "{user2_email:s}"
+        role: "USER"
+        registered_on: !anystr
+        organization: null
+      save:
+        body:
+          user_2_id: id
+
+  - name: Add user without organization to organization
+    request:
+      url: "http://{hostname:s}:5000/organizations/{created_organization_id:s}/users"
+      method: POST
+      json:
+        user:
+          id: "{user_2_id:s}"
+    response:
+      status_code: 201
+      body:
+        organization:
+          id: "{created_organization_id:s}"
+          name: "{organization_name:s}"
+          users: # they are returned sorted by name
+            - id: "{user_1_id:s}"
+              email: "{user1_email:s}"
+              name: "{user1_name:s}"
+              role: "ADMIN"
+              registered_on: !anystr
+            - id: "{user_2_id:s}"
+              email: "{user2_email:s}"
+              name: "{user2_name:s}"
+              role: "USER"
+              registered_on: !anystr
+        user:
+          id: "{user_2_id:s}"
+          name: "{user2_name:s}"
+          email: "{user2_email:s}"
+          role: "USER"
+          registered_on: !anystr
+
+  - name: Remove user from organization from the organization's DELETE endpoint
+    request:
+      url: "http://{hostname:s}:5000/organizations/{created_organization_id:s}/users/{user_2_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Check the organization has only 1 user again, the User 1
+    request:
+      url: "http://{hostname:s}:5000/organizations/{created_organization_id:s}"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        id: "{created_organization_id:s}"
+        name: "{organization_name:s}"
+        users:
+          - name: "{user1_name:s}"
+            id: "{user_1_id:s}"
+            email: "{user1_email:s}"
+            role: "ADMIN"
+            registered_on: !anystr
+
+  - name: Remove second user from organization
+    request:
+      url: "http://{hostname:s}:5000/organizations/{created_organization_id:s}/users/{user_1_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Check the organization has no users
+    request:
+      url: "http://{hostname:s}:5000/organizations/{created_organization_id:s}"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        id: "{created_organization_id:s}"
+        name: "{organization_name:s}"
+
+  - name: Check the user 1 has no organization
+    request:
+      url: "http://{hostname:s}:5000/users/{user_1_id:s}"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        id: "{user_1_id:s}"
+        name: "{user1_name:s}"
+        email: "{user1_email:s}"
+        role: "ADMIN"
+        registered_on: !anystr
+
+  - name: Check the user 2 has no organization
+    request:
+      url: "http://{hostname:s}:5000/users/{user_2_id:s}"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        id: "{user_2_id:s}"
+        name: "{user2_name:s}"
+        email: "{user2_email:s}"
+        role: "USER"
+        registered_on: !anystr
+
+    # this is more like clean up after tests than actual tests
+    # this are basically covered already in the users tests
+  - name: Delete the user 1
+    request:
+      url: "http://{hostname:s}:5000/users/{user_1_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Delete the user 2
+    request:
+      url: "http://{hostname:s}:5000/users/{user_2_id:s}"
+      method: DELETE
+    response:
+      status_code: 204

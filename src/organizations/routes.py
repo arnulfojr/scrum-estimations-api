@@ -93,7 +93,7 @@ def add_user_to_organization(org_id: str):
 
     return make_response(
         jsonify({
-            'organization': organization.dict_dump(),
+            'organization': organization.dict_dump(with_users=True),
             'user': user.dict_dump(with_organization=False),
         }),
         HTTPStatus.CREATED,

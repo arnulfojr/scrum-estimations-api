@@ -99,6 +99,9 @@ class User(peewee.Model):
         }
 
         if with_organization:
-            user['organization'] = self.organization.dict_dump() if self.organization else None
+            if self.organization:
+                user['organization'] = self.organization.dict_dump(with_users=False)
+            else:
+                user['organization'] = None
 
         return user

@@ -31,7 +31,7 @@ def get_user(user_id: str):
     return make_response(jsonify(user.dict_dump()), HTTPStatus.OK)
 
 
-@users_app.route('/<user_id>/organizations', methods=['GET'])
+@users_app.route('/<user_id>/organization', methods=['GET'])
 def get_user_with_organizations(user_id: str):
     """Get the user's information."""
     user = User.lookup(user_id)
