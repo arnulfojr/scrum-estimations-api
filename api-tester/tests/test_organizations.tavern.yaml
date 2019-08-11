@@ -1,0 +1,122 @@
+---
+
+test_name: Testing basic GET/POST endpoints for organizations
+
+includes:
+  - !include common.yaml
+  - !include org_vars.yaml
+
+stages:
+
+  - name: Fail organization input with unknown fields
+    request:
+      url: "http://{hostname:s}:5000/organizations/"
+      method: POST
+      json:
+        nombre: Supposed to fail
+    response:
+      status_code: 400
+      body:
+        name:
+          - "required field"
+        nombre:
+          - "unknown field"
+
+  - name: Fail organization input with valid fields but empty values
+    request:
+      url: "http://{hostname:s}:5000/organizations/"
+      method: POST
+      json:
+        name: ""
+    response:
+      status_code: 400
+      body:
+        name:
+          - "empty values not allowed"
+
+  - name: Create an organization
+    request:
+      url: "http://{hostname:s}:5000/organizations/"
+      method: POST
+      json:
+        name: "{organization_name:s}"
+    response:
+      status_code: 201
+      body:
+        name: "{organization_name:s}"
+      save:
+        body:
+          created_organization_id: id
+
+  - name: Get unknown organization
+    request:
+      url: "http://{hostname:s}:5000/organizations/{random_organization_id:s}"
+      method: GET
+    response:
+      status_code: 404
+
+  - name: Get the details from the created organization
+    request:
+      url: "http://{hostname:s}:5000/organizations/{created_organization_id:s}"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        id: "{created_organization_id:s}"
+
+  - name: Create second organization with same name is allowed
+    request:
+      url: "http://{hostname:s}:5000/organizations/"
+      method: POST
+      json:
+        name: "{organization_name:s}"
+    response:
+      status_code: 201
+      body:
+        name: "{organization_name:s}"
+      save:
+        body:
+          created_duplicated_organization_id: id
+
+---
+
+test_name: Testing basic PATCH endpoints for organizations
+
+includes:
+  - !include common.yaml
+  - !include org_vars.yaml
+
+stages:
+  - name: Attempt to patch an unknown organization
+    request:
+      url: "http://{hostname:s}:5000/organizations/{random_organization_id:s}"
+      method: PATCH
+    response:
+      status_code: 404
+
+  - name: Patch the organization to a different name
+    request:
+      url: "http://{hostname:s}:5000/organizations/{created_organization_id:s}"
+      method: PATCH
+      json:
+        name: "{updated_organization_name:s}"
+    response:
+      status_code: 200
+      body:
+        id: "{created_organization_id:s}"
+        name: "{updated_organization_name:s}"
+
+  - name: Invalid request for patching the organization to a different name
+    request:
+      url: "http://{hostname:s}:5000/organizations/{created_organization_id:s}"
+      method: PATCH
+      json:
+        name: ""
+        nombre: "asa"
+    response:
+      status_code: 400
+      body:
+        name:
+          - "empty values not allowed"
+        nombre:
+          - "unknown field"

@@ -1,0 +1,37 @@
+---
+
+test_name: Testing the basic user endpoints
+
+includes:
+  - !include common.yaml
+  - !include user_vars.yaml
+
+stages:
+
+  - name: Test create user with invalid data
+    request:
+      url: "http://{hostname:s}:5000/users/"
+      method: POST
+      json:
+        email: ""
+        name: ""
+        password: ""
+        role: ""
+    response:
+      status_code: 400
+      body:
+        email:
+          - "{not_empty:s}"
+        name:
+          - "{not_empty:s}"
+        password:
+          - "{not_empty:s}"
+        role:
+          - "{not_empty:s}"
+
+  - name: Test get user details for non-existent user
+    request:
+      url: "http://{hostname:s}:5000/users/{random_id:s}"
+    response:
+      status_code: 404
+

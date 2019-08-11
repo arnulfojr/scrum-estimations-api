@@ -1,0 +1,4 @@
+pytest-tldr
+pytest-sugar
+pytest<4.6.0,>=3.6.0
+tavern

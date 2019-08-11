@@ -53,8 +53,17 @@ def update_organization(org_id: str):
     organization = Organization.lookup(org_id)
 
     data = request.get_json()
-    if data.get('name'):
-        organization.name = data.get('name')
+
+    validator = Validator()
+    if not validator.validate(data, schemas.CREATE_ORGANIZATION):
+        return make_response(
+            jsonify(validator.errors),
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    organization_name = data.get('name')
+    if organization_name:
+        organization.name = organization_name
 
     organization.save()
 

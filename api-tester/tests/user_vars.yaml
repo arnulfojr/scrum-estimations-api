@@ -1,0 +1,9 @@
+---
+
+name: User variables
+description: All the user's common variables
+
+variables:
+  random_id: C324443D-4E8B-4DEC-B17C-8276002FAB0C
+  user_email: OrganizationA
+  not_empty: "empty values not allowed"

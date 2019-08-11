@@ -1,0 +1,17 @@
+---
+
+test_name: Testing the selfz blueprint
+
+includes:
+  - !include common.yaml
+
+stages:
+  - name: Hit the health check
+    request:
+      url: "http://{hostname:s}:5000/selfz/healthz"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        status: OK
+

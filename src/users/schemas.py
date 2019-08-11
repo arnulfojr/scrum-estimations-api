@@ -6,13 +6,17 @@ _CREATE_USER_SCHEMA = """
 email:
     type: string
     required: True
+    empty: False
 name:
     type: string
+    empty: False
 password:
     type: string
     required: True
+    empty: False
 role:
     type: string
+    empty: False
 organization:
     type: string
 """
