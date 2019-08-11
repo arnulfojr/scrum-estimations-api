@@ -7,7 +7,7 @@ from users.models import User
 from users.schemas import CREATE_USER_SCHEMA
 
 from .app import users_app
-from .exceptions import NotFound
+from .exceptions import NotFound, UserAlreadyExists
 
 
 @users_app.errorhandler(NotFound)
@@ -15,6 +15,13 @@ def handle_user_not_found(error: NotFound):
     return make_response(jsonify({
         'message': str(error),
     }), HTTPStatus.NOT_FOUND)
+
+
+@users_app.errorhandler(UserAlreadyExists)
+def handle_user_already_exists_error(error: UserAlreadyExists):
+    return make_response(jsonify({
+        'message': str(error),
+    }), HTTPStatus.UNPROCESSABLE_ENTITY)
 
 
 @users_app.route('/<user_id>', methods=['GET'])

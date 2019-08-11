@@ -1,6 +1,6 @@
 ---
 
-test_name: Testing the basic user endpoints
+test_name: Testing the basic user endpoints for validation
 
 includes:
   - !include common.yaml
@@ -29,6 +29,15 @@ stages:
         role:
           - "{not_empty:s}"
 
+---
+
+test_name: Testing the user registration lifecycle
+
+includes:
+  - !include common.yaml
+  - !include user_vars.yaml
+
+stages:
   - name: Create a new user with default role and no organization
     request:
       url: "http://{hostname:s}:5000/users/"
@@ -49,6 +58,59 @@ stages:
       save:
         body:
           registered_user: id
+
+  - name: Attempt to create duplicated user
+    request:
+      url: "http://{hostname:s}:5000/users/"
+      method: POST
+      json:
+        email: "{user_email:s}"
+        name: "{user_name:s}"
+        password: "{user_password:s}" # password is not returned
+    response:
+      status_code: 422
+      body:
+        message: !anystr
+
+  - name: Get the registered user with default role and no organization
+    request:
+      url: "http://{hostname:s}:5000/users/{registered_user:s}"
+      method: GET
+    response:
+      body:
+        id: "{registered_user:s}"
+        email: "{user_email:s}"
+        name: "{user_name:s}"
+        registered_on: !anystr
+        role: "USER"
+
+  - name: Patch the registered user with default role and no organization
+    request:
+      url: "http://{hostname:s}:5000/users/{registered_user:s}"
+      method: PATCH
+      json:
+        name: 'temp name'
+    response:
+      body:
+        id: "{registered_user:s}"
+        email: "{user_email:s}"
+        name: 'temp name'
+        registered_on: !anystr
+        role: "USER"
+
+  - name: Delete the registered user
+    request:
+      url: "http://{hostname:s}:5000/users/{registered_user:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Retrieve the just deleted user and expect not found
+    request:
+      url: "http://{hostname:s}:5000/users/{registered_user:s}"
+      method: GET
+    response:
+      status_code: 404
 
   - name: Test get user details for non-existent user
     request:

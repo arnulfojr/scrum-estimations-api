@@ -10,6 +10,7 @@ email:
 name:
     type: string
     empty: False
+    required: True
 password:
     type: string
     required: True

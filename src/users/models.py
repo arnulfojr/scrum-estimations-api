@@ -11,7 +11,7 @@ import peewee
 from common.db import database
 from organizations.models import Organization
 
-from .exceptions import NotFound
+from .exceptions import NotFound, UserAlreadyExists
 
 
 DEFAULT_NAME = 'User'
@@ -68,12 +68,15 @@ class User(peewee.Model):
         role = data.get('role', ROLES[0])
         organization = data.get('organization')
 
-        with database.atomic() as txn:
-            user = cls.create(email=email, name=name, password=password,
-                              role=role, organization=organization)
-            txn.commit()
-
-        return user
+        try:
+            with database.atomic() as txn:
+                user = cls.create(email=email, name=name, password=password,
+                                  role=role, organization=organization)
+                txn.commit()
+        except peewee.IntegrityError as e:
+            raise UserAlreadyExists(f'User with {email} is already registered', e) from e
+        else:
+            return user
 
     def update_from(self, *, email: str = '', name: str = '',
                     password: str = '', role: str = '', **kwargs):
