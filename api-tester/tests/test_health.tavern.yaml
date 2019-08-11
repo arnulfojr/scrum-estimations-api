@@ -3,7 +3,7 @@
 test_name: Testing the selfz blueprint
 
 includes:
-  - !include common.yaml
+  - !include vars/common.yaml
 
 stages:
   - name: Hit the health check
