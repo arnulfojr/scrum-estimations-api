@@ -3,15 +3,15 @@
 Contains the models of all the users regarding the admin tool.
 """
 from datetime import datetime
+from typing import Optional
 from uuid import uuid4
 
 import peewee
 
 from common.db import database
-from common.db import manager
-from common.db import MixinModel
-from common.loggers import logger
 from organizations.models import Organization
+
+from .exceptions import NotFound, UserAlreadyExists
 
 
 DEFAULT_NAME = 'User'
@@ -23,7 +23,7 @@ ROLES = (
 )
 
 
-class User(MixinModel, peewee.Model):
+class User(peewee.Model):
     """User from the admin tool.
 
     This model relates to an organization.
@@ -38,8 +38,8 @@ class User(MixinModel, peewee.Model):
 
     role = peewee.CharField(default=ROLES[0])
 
-    organization = peewee.ForeignKeyField(Organization, related_name='users',
-                                          db_column='organization',
+    organization = peewee.ForeignKeyField(Organization, backref='users',
+                                          column_name='organization_id',
                                           null=True, default=None)
 
     registered_on = peewee.TimestampField(default=datetime.now)
@@ -51,17 +51,17 @@ class User(MixinModel, peewee.Model):
         db_table = 'users'
 
     @classmethod
-    async def get(cls, id):
-        user_query = cls.select().where(cls.id == id)
-        matches = await manager.prefetch(user_query,
-                                         Organization.select())
-        matches = list(matches)
-        if not matches:
-            return None
-        return matches[0]
+    def lookup(cls, identifier) -> Optional['User']:
+        user_query = cls.select().where(cls.id == identifier)
+        try:
+            user = user_query.get()
+        except cls.DoesNotExist as e:
+            raise NotFound(f'User with ID {identifier} was not found', e) from e
+        else:
+            return user
 
     @classmethod
-    async def create_from(cls, data: dict):
+    def create_from(cls, data: dict) -> 'User':
         email = data['email']
         name = data.get('name')
         password = data.get('password')
@@ -69,14 +69,12 @@ class User(MixinModel, peewee.Model):
         organization = data.get('organization')
 
         try:
-            user = await manager.create(cls, email=email,
-                                        name=name,
-                                        password=password,
-                                        role=role,
-                                        organization=organization)
-        except peewee.InternalError as e:
-            logger.error(str(e))
-            return None
+            with database.atomic() as txn:
+                user = cls.create(email=email, name=name, password=password,
+                                  role=role, organization=organization)
+                txn.commit()
+        except peewee.IntegrityError as e:
+            raise UserAlreadyExists(f'User with {email} is already registered', e) from e
         else:
             return user
 

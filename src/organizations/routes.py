@@ -1,116 +1,111 @@
-from aiohttp import web
-from aiohttp.web import Request
-from aiohttp.web import RouteTableDef
+from http import HTTPStatus
+from typing import Union
+
 from cerberus import Validator
+from flask import jsonify, make_response, request
 
 from organizations import schemas
 from organizations.models import Organization
+from users.exceptions import NotFound as UserNotFound
 from users.models import User
 
-from . import helpers
+from .app import organizations_app
+from .exceptions import NotFound
 
 
-router = RouteTableDef()
-
-validator = Validator()
-
-
-@router.route('GET', '/{org_id}')
-async def get_organizations(request: Request):
-    organization_id = request.match_info['org_id']
-    organization = await helpers.fetch_organization(organization_id)
-    if not organization:
-        return web.json_response({
-            'message': 'The organization does not exist.',
-        }, status=404)
-
-    return web.json_response(organization.dict_dump())
+@organizations_app.errorhandler(NotFound)
+@organizations_app.errorhandler(UserNotFound)
+def handle_organization_not_found(error: Union[NotFound, UserNotFound]):
+    return make_response(
+        jsonify({
+            'message': str(error),
+        }),
+        HTTPStatus.NOT_FOUND,
+    )
 
 
-@router.route('POST', '/')
-async def create_organization(request: Request):
-    payload = await request.json()
+@organizations_app.route('/<org_id>', methods=['GET'])
+def get_organizations(org_id: str):
+    organization = Organization.lookup(org_id)
+
+    payload = organization.dict_dump()
+    return make_response(jsonify(payload), HTTPStatus.OK)
+
+
+@organizations_app.route('/', methods=['POST'])
+def create_organization():
+    payload = request.get_json()
+
+    validator = Validator()
     if not validator.validate(payload, schemas.CREATE_ORGANIZATION):
-        return web.json_response(validator.errors, status=400)
+        return make_response(
+            jsonify(validator.errors),
+            HTTPStatus.BAD_REQUEST,
+        )
 
-    organization = await Organization.create_from(payload)
-
+    organization = Organization.create_from(payload)
     data = organization.dict_dump()
-
-    return web.json_response(data, status=201)
-
-
-@router.route('PATCH', '/{org_id}')
-async def update_organization(request: Request):
-    organization_id = request.match_info['org_id']
-    organization = await Organization.get(organization_id)
-
-    if not organization:
-        return web.json_response({
-            'message': f'No organization with ID {organization_id} was found',
-        }, status=404)
-
-    data = await request.json()
-    if data.get('name'):
-        organization.name = data.get('name')
-
-    await organization.update()
-
-    return web.json_response(organization.dict_dump(),
-                             status=200)
+    return make_response(jsonify(data), HTTPStatus.CREATED)
 
 
-@router.route('POST', '/{org_id}/users')
-async def add_user_to_organization(request: Request):
-    org_id = request.match_info['org_id']
-    organization = await Organization.get(org_id)
-    if not organization:
-        return web.json_response({
-            'message': 'The given organization does not exist.',
-        }, status=404)
+@organizations_app.route('/<org_id>', methods=['PATCH'])
+def update_organization(org_id: str):
+    organization = Organization.lookup(org_id)
 
-    payload = await request.json()
+    data = request.get_json()
+
+    validator = Validator()
+    if not validator.validate(data, schemas.CREATE_ORGANIZATION):
+        return make_response(
+            jsonify(validator.errors),
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    organization_name = data.get('name')
+    if organization_name:
+        organization.name = organization_name
+
+    organization.save()
+
+    return make_response(
+        jsonify(organization.dict_dump()),
+        HTTPStatus.OK,
+    )
+
+
+@organizations_app.route('/<org_id>/users', methods=['POST'])
+def add_user_to_organization(org_id: str):
+    organization = Organization.lookup(org_id)
+    payload = request.get_json()
+
+    validator = Validator()
     if not validator.validate(payload, schemas.JOIN_ORGANIZATION):
-        return web.json_response(validator.errors, status=400)
+        return make_response(
+            jsonify(validator.errors),
+            HTTPStatus.BAD_REQUEST,
+        )
 
-    user = payload.get('user', dict())
-    if not user:
-        return web.json_response({
-            'message': 'The request must contain a user.',
-        }, status=400)
-
-    user = await User.get(user.get('id'))
-    if not user:
-        return web.json_response({
-            'message': 'The user does not exist.',
-        }, status=404)
+    user_id = payload['user']['id']
+    user = User.lookup(user_id)
 
     user.organization = organization
-    await user.put(only=('organization',))
+    user.save(only=('organization',))
 
-    return web.json_response({
-        'organization': organization.dict_dump(),
-        'user': user.dict_dump(),
-    }, status=201)
+    return make_response(
+        jsonify({
+            'organization': organization.dict_dump(),
+            'user': user.dict_dump(with_organization=False),
+        }),
+        HTTPStatus.CREATED,
+    )
 
 
-@router.route('DELETE', '/{org_id}/users/{user_id}')
-async def remove_user_from_organization(request: Request):
-    org_id = request.match_info['org_id']
-    organization = await Organization.get(org_id)
-    if not organization:
-        return web.json_response({
-            'message': 'The given organization does not exist.',
-        }, status=404)
-
-    user_id = request.match_info['user_id']
-    user = await User.get(user_id)
-    if not user:
-        return web.json_response({
-            'message': 'The user does not exist.',
-        }, status=404)
+@organizations_app.route('/<org_id>/users/<user_id>', methods=['DELETE'])
+def remove_user_from_organization(org_id: str, user_id: str):
+    Organization.lookup(org_id)
+    user = User.lookup(user_id)
 
     user.organization = None
-    await user.put(only=('organization',))
+    user.save(only=('organization',))
 
-    return web.json_response(None, status=204)
+    return make_response(jsonify(None), HTTPStatus.NO_CONTENT)

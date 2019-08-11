@@ -1,38 +1,35 @@
 #!/usr/local/bin/python
-import asyncio
-
-import aiomysql
+import pymysql
 
 from common.loggers import logger
 from settings import db
 
 
-async def create_db():
-    conn = await aiomysql.connect(host=db.HOST,
-                                  user=db.USER,
-                                  password=db.PASSWORD,
-                                  port=db.PORT,
-                                  db=None)
+def create_db():
+    conn = pymysql.connect(host=db.HOST,
+                           user=db.USER,
+                           password=db.PASSWORD,
+                           port=db.PORT,
+                           db=None)
     logger.info(f'Connected to {db.HOST}')
 
-    async with conn.cursor() as cur:
-        await cur.execute(f'CREATE DATABASE IF NOT EXISTS `{db.DATABASE}`')
+    with conn.cursor() as cur:
+        cur.execute(f'CREATE DATABASE IF NOT EXISTS `{db.DATABASE}`')
     conn.close()
 
     logger.info(f'Created database {db.DATABASE}')
 
-    conn = await aiomysql.connect(host=db.HOST,
-                                  user=db.USER,
-                                  password=db.PASSWORD,
-                                  port=db.PORT,
-                                  db=db.DATABASE)
-    async with conn.cursor() as cur:
-        await cur.execute(f'GRANT ALL PRIVILEGES ON `{db.DATABASE}` TO `{db.USER}`@`%`')
+    conn = pymysql.connect(host=db.HOST,
+                           user=db.USER,
+                           password=db.PASSWORD,
+                           port=db.PORT,
+                           db=db.DATABASE)
+    with conn.cursor() as cur:
+        cur.execute(f'GRANT ALL PRIVILEGES ON `{db.DATABASE}` TO `{db.USER}`@`%`')
 
     logger.info(f'Granted all privileges to {db.USER}')
     conn.close()
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(create_db())
+    create_db()

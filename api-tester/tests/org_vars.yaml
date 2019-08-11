@@ -1,0 +1,9 @@
+---
+
+name: Organization variables
+description: All the organization's common variables
+
+variables:
+  random_organization_id: C324443D-4E8B-4DEC-B17C-8276002FAB0C
+  organization_name: OrganizationA
+  updated_organization_name: OrganizationB

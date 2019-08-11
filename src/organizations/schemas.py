@@ -5,6 +5,7 @@ _CREATE_ORG = """
 name:
   type: string
   required: True
+  empty: False
 """
 
 CREATE_ORGANIZATION = yaml.safe_load(_CREATE_ORG)

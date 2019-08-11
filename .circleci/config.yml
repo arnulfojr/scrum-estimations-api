@@ -1,0 +1,29 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.7
+    working_directory: ~/repo
+    steps:
+      - checkout
+
+      - setup_remote_docker:
+          version: 18.06.0-ce
+
+      - run:
+          name: Run lint
+          command: |
+            sudo make lint
+
+      - run:
+          name: Run API tests
+          command: |
+            make api-test
+
+      - store_artifacts:
+          path: api-tester/out
+          destination: api-tester/out

@@ -9,6 +9,6 @@ USER = os.environ['DB_USER']
 
 PASSWORD = os.environ['DB_PASSWORD']
 
-DATABASE = os.getenv('DB_NAME', 'admin-tool')
+DATABASE = os.getenv('DB_NAME', 'estimations')
 
 ENDPOINT = f'mysql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}'

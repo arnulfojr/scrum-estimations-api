@@ -1,8 +1,7 @@
-from aiohttp.web import Application
-
-from organizations.routes import router
+from flask import Blueprint
 
 
-OrganizationsApp = Application()
+organizations_app = Blueprint('organizations', __name__)
 
-OrganizationsApp.add_routes(router)
+# import the routes
+from . import routes  # noqa

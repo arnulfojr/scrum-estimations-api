@@ -1,10 +1,7 @@
 # Load .env file if existing
 -include .env
 
-local:
-	ln -sfv docker/docker-compose.local.yml docker-compose.override.yml
-	docker-compose config
-.PHONY: local
+export DOCKER_NETWORK_NAME=scrum-apis
 
 install:
 	pip install -r requirements.txt
@@ -14,21 +11,45 @@ install:
 .PHONY: install
 
 lint:
-	# lint check (flake)
-	docker run --rm \
-		--workdir /app \
-		-e APP_DIR=/app \
-		-e CONF_DIR=/app/conf \
-		--volume ${PWD}/.flake8:/app/.flake8 \
-		--volume ${PWD}/requirements-lint.txt:/app/requirements-lint.txt \
-		--volume ${PWD}/bin/:/app/bin/ \
-		--volume ${PWD}/conf/:/app/conf/ \
-		--volume ${PWD}/migrations/:/app/migrations/ \
-		--volume ${PWD}/src/:/app/src/ \
-		--entrypoint /bin/sh \
-		python:3.7-alpine /app/bin/lint
+	./bin/lint
 .PHONY: lint
 
 build:
 	docker-compose build server
 .PHONY: build
+
+build-api-test:
+	@docker-compose -f docker-compose.yml \
+		-f docker/docker-compose.tester.yml \
+		build tester
+.PHONY: build-api-test
+
+api-test:
+	@rm -fv docker-compose.override.yml
+	./api-tester/prepare.sh
+	./api-tester/run.sh
+.PHONY: api-test
+
+run:
+	@docker-compose -f docker-compose.yml \
+		-f docker/docker-compose.local.yml \
+		up
+.PHONY: run
+
+run-local-api-test:
+	@rm -fv docker-compose.override.yml
+	@docker-compose -f docker-compose.yml \
+		-f docker/docker-compose.tester.yml \
+		-f docker/docker-compose.tester.local.yml \
+		run --no-deps --use-aliases tester /app/tests
+.PHONY: run-local-api-test
+
+clean:
+	@docker-compose -f docker-compose.yml \
+		-f docker/docker-compose.tester.yml \
+		down -v
+	@docker-compose -f docker-compose.yml \
+		-f docker/docker-compose.local.yml \
+		down -v
+	@rm -fv docker-compose.override.yml
+.PHONY: clean

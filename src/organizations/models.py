@@ -5,12 +5,15 @@ from uuid import uuid4
 import peewee
 
 from common.db import database
-from common.db import manager
-from common.db import MixinModel
+
+from .exceptions import NotFound
 
 
-class Organization(MixinModel, peewee.Model):
-    """Organizations model."""
+class Organization(peewee.Model):
+    """Organizations model.
+
+    Receives the backref from the User class as 'users'
+    """
     id = peewee.UUIDField(primary_key=True, default=uuid4)
 
     name = peewee.CharField(null=False)
@@ -24,10 +27,22 @@ class Organization(MixinModel, peewee.Model):
         db_table = 'organizations'
 
     @classmethod
-    async def create_from(cls, data: dict):
+    def lookup(cls, identifier) -> 'Organization':
+        query = cls.select().where(cls.id == identifier)
+        try:
+            instance = query.get()
+        except cls.DoesNotExist as e:
+            raise NotFound(f'Organization with ID {identifier} was not found', e) from e
+        else:
+            return instance
+
+    @classmethod
+    def create_from(cls, data: dict) -> 'Organization':
         name = data.get('name')
 
-        organization = await manager.create(cls, name=name)
+        with database.atomic() as txn:
+            organization = cls.create(name=name)
+            txn.commit()
         return organization
 
     def dict_dump(self) -> dict:
@@ -37,6 +52,6 @@ class Organization(MixinModel, peewee.Model):
         }
 
         if self.users:
-            dump['users'] = [u.dict_dump() for u in self.users]
-
+            dump['users'] = [u.dict_dump(with_organization=False)
+                             for u in self.users]
         return dump

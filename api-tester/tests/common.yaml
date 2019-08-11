@@ -1,0 +1,7 @@
+---
+
+name: Common variables
+description: All common variables for all tests
+
+variables:
+  hostname: server

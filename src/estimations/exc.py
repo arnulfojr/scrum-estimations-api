@@ -6,3 +6,10 @@ class EstimationsException(Exception):
 class ResourceAlreadyExists(EstimationsException):
     """Resource Already exists."""
 
+
+class ResourceNotFound(EstimationsException):
+    """Resource does not exist."""
+
+
+class SequenceNotFound(ResourceNotFound):
+    """The Sequence was not found."""

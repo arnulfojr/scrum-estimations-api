@@ -1,35 +1,23 @@
 """Database singleton."""
-import peewee_async
+import peewee
 
 from settings import db
 
 
-database = peewee_async.MySQLDatabase(db.DATABASE,
-                                      host=db.HOST,
-                                      port=db.PORT,
-                                      user=db.USER,
-                                      password=db.PASSWORD)
+database = peewee.MySQLDatabase(db.DATABASE,
+                                host=db.HOST,
+                                port=db.PORT,
+                                user=db.USER,
+                                password=db.PASSWORD)
 
 
-manager = peewee_async.Manager(database)
+def connect(*args, **kwargs):
+    global database
+    database.connect()
 
 
-class MixinModel:
-    """MixinModel that contains essential manipulation."""
+def close(*args, **kwargs):
+    global database
 
-    @classmethod
-    async def get(cls, id):
-        try:
-            model = await manager.get(cls, id=id)
-        except cls.DoesNotExist:
-            return None
-        else:
-            return model
-
-    async def put(self, only=None):
-        """Persists the current state of the instance."""
-        await manager.update(self, only=only)
-
-    async def remove(self):
-        """Remove the user from the database."""
-        await manager.delete(self)
+    if database and not database.is_closed():
+        database.close()

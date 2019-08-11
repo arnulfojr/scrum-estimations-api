@@ -1,0 +1,19 @@
+version: '3.5'
+
+services:
+
+  tester:
+    build:
+      context: ./api-tester
+    labels:
+      - Application=Tester
+    image: tavern
+    networks:
+      - scrum-apis
+    depends_on:
+      - server
+
+networks:
+  scrum-apis:
+    external:
+      name: ${DOCKER_NETWORK_NAME}

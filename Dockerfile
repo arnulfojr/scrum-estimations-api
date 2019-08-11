@@ -12,6 +12,8 @@ RUN apk add --no-cache build-base libffi-dev openssl-dev && \
     pip install --disable-pip-version-check -r ./requirements.txt && \
     apk del build-base libffi-dev
 
+COPY ./conf/ ./conf/
+
 ENV PATH "${PATH}:${APP_DIR}/bin"
 COPY ./bin/ ./bin/
 
