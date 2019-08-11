@@ -32,9 +32,7 @@ build-api-test:
 api-test:
 	@rm -fv docker-compose.override.yml
 	./api-tester/prepare.sh
-	docker-compose -f docker-compose.yml \
-		-f docker/docker-compose.tester.yml \
-		run --use-aliases tester /app/tests
+	./api-tester/run.sh
 .PHONY: api-test
 
 run:
