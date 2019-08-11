@@ -1,12 +1,7 @@
 # Load .env file if existing
 -include .env
 
-export DOCKER_NETWORK_NAME=scrump-apis
-
-local:
-	ln -sfv docker/docker-compose.local.yml docker-compose.override.yml
-	docker-compose config
-.PHONY: local
+export DOCKER_NETWORK_NAME=scrum-apis
 
 install:
 	pip install -r requirements.txt
@@ -46,12 +41,15 @@ run-local-api-test:
 	@docker-compose -f docker-compose.yml \
 		-f docker/docker-compose.tester.yml \
 		-f docker/docker-compose.tester.local.yml \
-		run --no-deps tester /app/tests
+		run --no-deps --use-aliases tester /app/tests
 .PHONY: run-local-api-test
 
 clean:
 	@docker-compose -f docker-compose.yml \
 		-f docker/docker-compose.tester.yml \
+		down -v
+	@docker-compose -f docker-compose.yml \
+		-f docker/docker-compose.local.yml \
 		down -v
 	@rm -fv docker-compose.override.yml
 .PHONY: clean
