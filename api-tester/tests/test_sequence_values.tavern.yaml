@@ -1,0 +1,28 @@
+---
+test_name: Sequence value test endpoints
+
+includes:
+  - !include vars/common.yaml
+
+stages:
+  - name: Request a valid sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/"
+      method: POST
+      json:
+        name: "fibonacci-series"
+    response:
+      status_code: 201
+      body:
+        name: "fibonacci-series"
+        created_at: !anystr
+      save:
+        body:
+          sequence_name: name
+
+  - name: Delete the sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/{sequence_name:s}"
+      method: DELETE
+    response:
+      status_code: 204
