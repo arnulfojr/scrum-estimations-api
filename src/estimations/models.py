@@ -84,7 +84,7 @@ class Value(peewee.Model):
 
     name = peewee.CharField(null=True)
 
-    value = peewee.IntegerField(null=True)
+    value = peewee.DecimalField(null=True)
 
     created_at = peewee.TimestampField(default=datetime.now)
 

@@ -17,7 +17,7 @@ def upgrade(migrator):
                           references=f'{TABLE_NAME}.id',
                           null=True)
         table.char('name', null=True, max_length=255)
-        table.integer('value', null=True)
+        table.decimal('value', null=True)
         table.integer('created_at')
 
 
