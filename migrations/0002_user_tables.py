@@ -11,6 +11,7 @@ def upgrade(migrator):
         table.char('password', max_length=255)
         table.foreign_key('uuid', 'organization_id',
                           references='organizations.id',
+                          on_delete='SET NULL',
                           null=True)
 
 

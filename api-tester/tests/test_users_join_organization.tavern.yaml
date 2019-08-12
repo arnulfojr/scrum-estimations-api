@@ -62,6 +62,15 @@ stages:
             role: "ADMIN"
             registered_on: !anystr
 
+  - name: Attempt to delete the organization but fail on it (only empty organizations can be deleted)
+    request:
+      url: "http://{hostname:s}:5000/organizations/{created_organization_id:s}"
+      method: DELETE
+    response:
+      status_code: 422
+      body:
+        message: !anystr
+
   - name: Check the user has one organization
     request:
       url: "http://{hostname:s}:5000/users/{user_1_id}/organization"

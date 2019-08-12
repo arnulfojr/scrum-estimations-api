@@ -48,6 +48,20 @@ def create_organization():
     return make_response(jsonify(data), HTTPStatus.CREATED)
 
 
+@organizations_app.route('/<org_id>', methods=['DELETE'])
+def delete_organization(org_id: str):
+    organization = Organization.lookup(org_id)
+
+    user_count = len(organization.users)
+    if user_count > 0:
+        return make_response(jsonify({
+            'message': 'Please remove all users from the organization',
+        }), HTTPStatus.UNPROCESSABLE_ENTITY)
+    else:
+        organization.delete_instance()
+        return make_response(jsonify(None), HTTPStatus.NO_CONTENT)
+
+
 @organizations_app.route('/<org_id>', methods=['PATCH'])
 def update_organization(org_id: str):
     organization = Organization.lookup(org_id)

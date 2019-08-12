@@ -64,7 +64,7 @@ stages:
       body:
         id: "{created_organization_id:s}"
 
-  - name: Create second organization with same name is allowed
+  - name: Creating a second organization with same name is allowed
     request:
       url: "http://{hostname:s}:5000/organizations/"
       method: POST
@@ -77,6 +77,13 @@ stages:
       save:
         body:
           created_duplicated_organization_id: id
+
+  - name: Delete the created duplicated organization
+    request:
+      url: "http://{hostname:s}:5000/organizations/{created_duplicated_organization_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
 
 ---
 
@@ -120,3 +127,10 @@ stages:
           - "empty values not allowed"
         nombre:
           - "unknown field"
+
+  - name: Delete the created organization
+    request:
+      url: "http://{hostname:s}:5000/organizations/{created_organization_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
