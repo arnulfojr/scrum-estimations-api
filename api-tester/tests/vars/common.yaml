@@ -5,3 +5,4 @@ description: All common variables for all tests
 
 variables:
   hostname: server
+  not_empty: "empty values not allowed"

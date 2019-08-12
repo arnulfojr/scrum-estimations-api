@@ -1,0 +1,69 @@
+---
+
+test_name: Test Sequence endpoint validation
+
+includes:
+  - !include vars/common.yaml
+
+stages:
+  - name: Request empty sequences
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences"
+      method: GET
+    response:
+      status_code: 200
+      body: []
+
+  - name: Request empty named sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/"
+      method: POST
+      json:
+        name: ""
+    response:
+      status_code: 400
+      body:
+        name:
+          - "{not_empty}"
+
+  - name: Request a valid sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/"
+      method: POST
+      json:
+        name: "Fibonacci"
+    response:
+      status_code: 201
+      body:
+        name: "Fibonacci"
+        created_at: !anystr
+      save:
+        body:
+          sequence_name: name
+
+  - name: Get the created sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/{sequence_name:s}"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        name: "{sequence_name:s}"
+
+  - name: Attempt to create a duplicated sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/"
+      method: POST
+      json:
+        name: "Fibonacci"
+    response:
+      status_code: 422
+      body:
+        message: !anystr
+
+  - name: Delete the sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/{sequence_name:s}"
+      method: DELETE
+    response:
+      status_code: 204

@@ -8,4 +8,3 @@ variables:
   user_email: user@example.com
   user_name: Test User
   user_password: SomeRandomPassword
-  not_empty: "empty values not allowed"
