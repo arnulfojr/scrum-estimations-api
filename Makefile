@@ -26,8 +26,8 @@ build-api-test:
 
 api-test:
 	@rm -fv docker-compose.override.yml
-	./api-tester/prepare.sh
-	./api-tester/run.sh
+	./api-tester/ci/prepare.sh
+	./api-tester/ci/run.sh
 .PHONY: api-test
 
 run:
