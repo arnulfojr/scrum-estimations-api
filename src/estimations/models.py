@@ -13,12 +13,15 @@ Here is a short story of the models:
         The name (optionally) can be used to abstract away the numeric value.
 """
 from datetime import datetime
+from decimal import Decimal
+from itertools import chain, islice, tee
 from typing import List
 from uuid import uuid4
 
 import peewee
 
 from common.db import database
+from common.loggers import logger
 from organizations.models import Organization
 from users.models import User
 
@@ -36,7 +39,7 @@ class Sequence(peewee.Model):
 
         database = database
 
-        db_table = 'sequences'
+        table_name = 'sequences'
 
     @classmethod
     def lookup(cls, name: str) -> 'Sequence':
@@ -64,11 +67,46 @@ class Sequence(peewee.Model):
         else:
             return instance
 
-    def dump(self) -> dict:
-        return {
+    def dump(self, with_values=True) -> dict:
+        data = {
             'name': self.name,
             'created_at': self.created_at.isoformat(),
         }
+
+        if with_values:
+            data['values'] = [value.dump() for value in self.sorted_values]
+
+        return data
+
+    @property
+    def sorted_values(self):
+        if not self.values:
+            logger.error('No values found')
+            return list()
+
+        numeric_values = list(filter(lambda v: v.value, self.values))
+        if not numeric_values:
+            logger.error('Did not found any numeric values')
+            return self.values
+
+        root_value = next((nv for nv in numeric_values
+                           if nv.previous is None and nv.next is not None), None)
+        if root_value is None:
+            logger.error(f'No root value, can not sort in {numeric_values}')
+            return self.values
+
+        value, values = root_value, list()
+        values.append(value)
+        while value.next:
+            value = value.next
+            if value:
+                values.append(value)
+            else:
+                break
+
+        non_numeric_values = list(filter(lambda v: not v.value, self.values))
+        values.extend(non_numeric_values)
+        return values
 
 
 class Value(peewee.Model):
@@ -76,11 +114,15 @@ class Value(peewee.Model):
 
     id = peewee.UUIDField(primary_key=True, default=uuid4)
 
-    sequence = peewee.ForeignKeyField(Sequence, related_name='estimation_values')
+    sequence = peewee.ForeignKeyField(Sequence, field='name', related_name='values',
+                                      on_delete='CASCADE',
+                                      column_name='sequence')
 
-    previous = peewee.ForeignKeyField('self', null=True, related_name='next_value')
+    previous = peewee.ForeignKeyField('self', null=True, related_name='next_value',
+                                      column_name='previous')
 
-    next = peewee.ForeignKeyField('self', null=True, related_name='previous_value')
+    next = peewee.ForeignKeyField('self', null=True, related_name='previous_value',
+                                  column_name='next')
 
     name = peewee.CharField(null=True)
 
@@ -91,28 +133,61 @@ class Value(peewee.Model):
     class Meta:
 
         indexes = (
-            (('previous_step', 'next_step'), True),
+            (('previous', 'next'), True),
         )
 
         database = database
 
-        db_table = 'estimation_values'
+        table_name = 'estimation_values'
 
     @classmethod
-    def get_from_sequence(cls, sequence: Sequence):
-        prev_values = cls.select().alias()
-        next_values = cls.select().alias()
-        query = cls.select()
-        query = query.join(prev_values, on=(cls.previous == cls.id))
-        query = query.join(next_values, on=(cls.next == cls.id))
-        query = query.join(Sequence, on=(cls.sequence.name == Sequence.name))
-        query = query.where(cls.sequence.name == sequence.name)
+    def from_list(cls, items: List[dict], sequence: Sequence) -> List['Value']:
+        values = list()
 
-        return None
+        with database.atomic():
+            for item in items:
+                val = item.get('value')
+                try:
+                    normalized_value = Decimal(val)
+                except TypeError:
+                    logger.error(f'Value({val}) was not Decimal and will use None')
+                    normalized_value = None
 
-    @classmethod
-    def from_data(cls, *, sequence: Sequence, previous, next, name: str, value: int):
-        pass
+                value = cls.create(name=item.get('name'),
+                                   sequence=sequence,
+                                   value=normalized_value)
+                values.append(value)
+
+        numeric_values = list(filter(lambda x: x.value, values))
+        for previous, current, nxt in previous_and_next(numeric_values):
+            current.previous = previous
+            current.next = nxt
+
+        with database.atomic():
+            for value in numeric_values:
+                value.save()
+
+        return values
+
+    def dump(self):
+        payload = {
+            'id': self.id,
+            'name': self.name,
+        }
+
+        if self.value:
+            payload['value'] = float(self.value)
+        else:
+            payload['value'] = None
+
+        return payload
+
+
+def previous_and_next(some_iterable):
+    prevs, items, nexts = tee(some_iterable, 3)
+    prevs = chain([None], prevs)
+    nexts = chain(islice(nexts, 1, None), [None])
+    return zip(prevs, items, nexts)
 
 
 class Session(peewee.Model):
@@ -136,7 +211,7 @@ class Session(peewee.Model):
 
         database = database
 
-        db_table = 'sessions'
+        table_name = 'sessions'
 
 
 class SessionMember(peewee.Model):
@@ -156,7 +231,7 @@ class SessionMember(peewee.Model):
 
         database = database
 
-        db_table = 'session_members'
+        table_name = 'session_members'
 
 
 class Task(peewee.Model):
@@ -174,7 +249,7 @@ class Task(peewee.Model):
 
         database = database
 
-        db_table = 'tasks'
+        table_name = 'tasks'
 
 
 class Estimation(peewee.Model):
@@ -198,7 +273,7 @@ class Estimation(peewee.Model):
 
         database = database
 
-        db_table = 'estimations'
+        table_name = 'estimations'
 
 
 class EstimationSummary(peewee.Model):
@@ -216,4 +291,4 @@ class EstimationSummary(peewee.Model):
 
         database = database
 
-        db_table = 'estimation_summaries'
+        table_name = 'estimation_summaries'
