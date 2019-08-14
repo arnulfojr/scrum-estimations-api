@@ -21,5 +21,5 @@ if [ "${1}" = 'serve' ]; then
   exec gunicorn -c ${APP_DIR}/conf/app_conf.py run:app
 fi
 
-echo "Unmatched command, executing: ${@}"
+echo "Unmatched command, executing: $*"
 exec ${@}
