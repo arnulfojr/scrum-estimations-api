@@ -65,3 +65,12 @@ user:
             empty: False
 """
 JOIN_SESSION = yaml.safe_load(_JOIN_SESSION)
+
+
+_CREATE_TASK = """
+name:
+    type: string
+    required: True
+    empty: False
+"""
+CREATE_TASK = EDIT_TASK = yaml.safe_load(_CREATE_TASK)

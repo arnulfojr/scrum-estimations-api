@@ -8,7 +8,7 @@ from users.models import User
 
 from ..app import estimations_app
 from ..exc import UserIsNotPartOfTheSession
-from ..models import Session, SessionMember
+from ..models import Session, SessionMember, Task
 
 
 @estimations_app.route('/sessions/<code>', methods=['GET'])
@@ -113,9 +113,49 @@ def leave_session(session_id: str, user_id: str):
 
 @estimations_app.route('/sessions/<session_id>/tasks/', methods=['POST'])
 def add_task_to_session(session_id: str):
-    pass
+    if not session_id:
+        return make_response(jsonify({
+            'message': 'Please provide the session identifier.',
+        }), HTTPStatus.NOT_FOUND)
+
+    session = Session.lookup(session_id)
+
+    payload = request.get_json()
+
+    validator = Validator()
+    if not validator.validate(payload, schemas.CREATE_TASK):
+        return make_response(jsonify(validator.errors),
+                             HTTPStatus.BAD_REQUEST)
+
+    task = Task.create(session=session, name=payload['name'])
+
+    return make_response(jsonify(task.dump()), HTTPStatus.CREATED)
 
 
-@estimations_app.route('/sessions/<session_id>/tasks/<task_id>', methods=['PATCH'])
-def edit_task_from_session(task_id: str):
-    pass
+@estimations_app.route('/sessions/<session_id>/tasks/<task>', methods=['PATCH'])
+def edit_task_from_session(session_id: str, task: str):
+    if not session_id:
+        return make_response(jsonify({
+            'message': 'Please provide the session identifier.',
+        }), HTTPStatus.NOT_FOUND)
+
+    session = Session.lookup(session_id)
+
+    payload = request.get_json()
+
+    validator = Validator()
+    if not validator.validate(payload, schemas.EDIT_TASK):
+        return make_response(jsonify(validator.errors),
+                             HTTPStatus.BAD_REQUEST)
+
+    try:
+        task = Task.lookup(task, session=session)
+    except (TypeError, ValueError):
+        return make_response(jsonify({
+            'message': 'We could not infer the Task from the given input...',
+        }), HTTPStatus.BAD_REQUEST)
+
+    task.name = payload['name']
+    task.save()
+
+    return make_response(jsonify(task.dump()), HTTPStatus.CREATED)

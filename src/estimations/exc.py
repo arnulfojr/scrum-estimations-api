@@ -21,3 +21,7 @@ class SessionNotFound(ResourceNotFound):
 
 class UserIsNotPartOfTheSession(ResourceNotFound):
     """The member is not part of the session."""
+
+
+class TaskNotFound(ResourceNotFound):
+    """The task was not found."""

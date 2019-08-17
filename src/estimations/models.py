@@ -15,8 +15,8 @@ Here is a short story of the models:
 from datetime import datetime
 from decimal import Decimal
 from itertools import chain, islice, tee
-from typing import Any, Iterator, List
-from uuid import uuid4
+from typing import Any, Iterator, List, Union
+from uuid import UUID, uuid4
 
 import peewee
 
@@ -25,7 +25,8 @@ from common.loggers import logger
 from organizations.models import Organization
 from users.models import User
 
-from .exc import ResourceAlreadyExists, SequenceNotFound, SessionNotFound, UserIsNotPartOfTheSession
+from .exc import ResourceAlreadyExists, SequenceNotFound, SessionNotFound
+from .exc import TaskNotFound, UserIsNotPartOfTheSession
 
 
 class Sequence(peewee.Model):
@@ -339,7 +340,8 @@ class Task(peewee.Model):
 
     name = peewee.CharField(index=True)
 
-    session = peewee.ForeignKeyField(Session, related_name='tasks')
+    session = peewee.ForeignKeyField(Session, related_name='tasks',
+                                     column_name='session')
 
     created_at = peewee.TimestampField(default=datetime.now)
 
@@ -348,6 +350,44 @@ class Task(peewee.Model):
         database = database
 
         table_name = 'tasks'
+
+    @classmethod
+    def lookup(cls, name_or_id: Union[UUID, str], session: Union[Session, None] = None):
+        query = None
+        if isinstance(name_or_id, UUID):  # then for sure it is the Task ID
+            query = cls.select().where(cls.id == name_or_id)
+        else:
+            # well it could be either the Task ID or the name...
+            try:
+                name_or_id = UUID(name_or_id)
+            except (ValueError, TypeError):  # for sure then it is the name
+                if not session:
+                    # we kind of need the session for it
+                    logger.error(f'While trying to lookup the Task {name_or_id} we got no session')
+                    raise
+                query = cls.select().where(
+                    (cls.name == name_or_id) & (cls.session == session))
+            else:
+                # we know we are referring to the Task ID
+                query = cls.select().where(cls.id == name_or_id)
+
+        if query is None:
+            raise TaskNotFound('No query for Task search could be built')
+
+        try:
+            task = query.get()
+        except cls.DoesNotExist as e:
+            raise TaskNotFound('Task was not found') from e
+        else:
+            return task
+
+    def dump(self, with_organization=False):
+        return {
+            'id': str(self.id),
+            'name': self.name,
+            'session': self.session.dump(with_organization=with_organization),
+            'created_at': self.created_at.isoformat(),
+        }
 
 
 class Estimation(peewee.Model):
