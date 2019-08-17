@@ -234,12 +234,12 @@ class Session(peewee.Model):
         table_name = 'sessions'
 
     @classmethod
-    def lookup(cls, id: str):
-        query = cls.select().where(cls.id == id)
+    def lookup(cls, code: str):
+        query = cls.select().where(cls.id == code)
         try:
             session = query.get()
         except cls.DoesNotExist as e:
-            raise SessionNotFound(f'Session with name {id} was not found') from e
+            raise SessionNotFound(f'Session with name {code} was not found') from e
         else:
             return session
 
@@ -249,7 +249,8 @@ class Session(peewee.Model):
             organization_id = organization['id']
             sequence_name = sequence['name']
         except KeyError as e:
-            logger.error(f'Expected the organization to have an ID or the Sequence to have a name - {e}')
+            logger.error(f'Expected the organization to have an ID or '
+                         f'the Sequence to have a name - {e}')
             raise
 
         sequence_model = Sequence.lookup(sequence_name)

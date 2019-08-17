@@ -73,7 +73,7 @@ def remove_sequence(name: str):
 
     sequence = Sequence.lookup(name)
 
-    if len(sequence.sessions):
+    if sequence.sessions:
         return make_response(jsonify({
             'message': f'The sequence has sessions and therefore can not be deleted',
         }), HTTPStatus.UNPROCESSABLE_ENTITY)
