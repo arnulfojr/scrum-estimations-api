@@ -15,7 +15,7 @@ Here is a short story of the models:
 from datetime import datetime
 from decimal import Decimal
 from itertools import chain, islice, tee
-from typing import List
+from typing import Any, Iterator, List
 from uuid import uuid4
 
 import peewee
@@ -84,7 +84,7 @@ class Sequence(peewee.Model):
             logger.error('No values found')
             return list()
 
-        numeric_values = list(filter(lambda v: v.value, self.values))
+        numeric_values = list(filter(lambda v: v.value is not None, self.values))
         if not numeric_values:
             logger.error('Did not found any numeric values')
             return self.values
@@ -104,9 +104,22 @@ class Sequence(peewee.Model):
             else:
                 break
 
-        non_numeric_values = list(filter(lambda v: not v.value, self.values))
+        non_numeric_values = list(filter(lambda v: v.value is None, self.values))
+        if non_numeric_values:
+            # sort in place by name, fallback to value's ID
+            non_numeric_values.sort(key=lambda v: v.name or str(v.id))
+
         values.extend(non_numeric_values)
         return values
+
+    def remove_values(self):
+        """Removes the related values in an atomic way."""
+        values = self.sorted_values
+        if not values:
+            return
+        with database.atomic():
+            for value in values:
+                value.delete_instance()
 
 
 class Value(peewee.Model):
@@ -119,9 +132,11 @@ class Value(peewee.Model):
                                       column_name='sequence')
 
     previous = peewee.ForeignKeyField('self', null=True, related_name='next_value',
+                                      on_delete='SET NULL',
                                       column_name='previous')
 
     next = peewee.ForeignKeyField('self', null=True, related_name='previous_value',
+                                  on_delete='SET NULL',
                                   column_name='next')
 
     name = peewee.CharField(null=True)
@@ -158,7 +173,7 @@ class Value(peewee.Model):
                                    value=normalized_value)
                 values.append(value)
 
-        numeric_values = list(filter(lambda x: x.value, values))
+        numeric_values = list(filter(lambda x: x.value is not None, values))
         for previous, current, nxt in previous_and_next(numeric_values):
             current.previous = previous
             current.next = nxt
@@ -172,10 +187,12 @@ class Value(peewee.Model):
     def dump(self):
         payload = {
             'id': self.id,
-            'name': self.name,
         }
 
-        if self.value:
+        if self.name:
+            payload['name'] = self.name
+
+        if self.value is not None:
             payload['value'] = float(self.value)
         else:
             payload['value'] = None
@@ -183,7 +200,8 @@ class Value(peewee.Model):
         return payload
 
 
-def previous_and_next(some_iterable):
+def previous_and_next(some_iterable: Iterator[Any]):
+    """Iterate over a 3-tuple valued as (previous, current, next)."""
     prevs, items, nexts = tee(some_iterable, 3)
     prevs = chain([None], prevs)
     nexts = chain(islice(nexts, 1, None), [None])

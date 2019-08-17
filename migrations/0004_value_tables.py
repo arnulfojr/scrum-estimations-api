@@ -13,9 +13,11 @@ def upgrade(migrator):
                           null=False)
         table.foreign_key('uuid', 'previous',
                           references=f'{TABLE_NAME}.id',
+                          on_delete='SET NULL',
                           null=True)
         table.foreign_key('uuid', 'next',
                           references=f'{TABLE_NAME}.id',
+                          on_delete='SET NULL',
                           null=True)
         table.char('name', null=True, max_length=255)
         table.decimal('value', null=True)

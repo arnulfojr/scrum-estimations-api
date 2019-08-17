@@ -83,6 +83,11 @@ def create_values_for_sequence(name: str):
 
     sequence = Sequence.lookup(name=name)
 
+    if sequence.values:
+        return make_response(jsonify({
+            'message': 'The sequence already has values, please remove them',
+        }), HTTPStatus.UNPROCESSABLE_ENTITY)
+
     payload = request.get_json()
     elements = {'values': payload}
 
@@ -99,3 +104,21 @@ def create_values_for_sequence(name: str):
         jsonify([value.dump() for value in values]),
         HTTPStatus.CREATED,
     )
+
+
+@estimations_app.route('/sequences/<name>/values', methods=['DELETE'])
+def remove_values_from_sequence(name: str):
+    if not name:
+        return make_response(jsonify({
+            'message': 'Please provide a sequence identifier.',
+        }), HTTPStatus.NOT_FOUND)
+
+    sequence = Sequence.lookup(name=name)
+    if not sequence.values:
+        return make_response(jsonify({
+            f'No values were found for sequence {name}',
+        }), HTTPStatus.NOT_FOUND)
+
+    sequence.remove_values()
+
+    return make_response(jsonify({}), HTTPStatus.NO_CONTENT)
