@@ -280,9 +280,11 @@ class Session(peewee.Model):
 class SessionMember(peewee.Model):
     """The session members."""
 
-    session = peewee.ForeignKeyField(Session, related_name='session_members')
+    session = peewee.ForeignKeyField(Session, related_name='session_members',
+                                     column_name='session')
 
-    user = peewee.ForeignKeyField(User, related_name='session_members')
+    user = peewee.ForeignKeyField(User, related_name='session_user',
+                                  column_name='user')
 
     class Meta:
 
