@@ -17,3 +17,7 @@ class SequenceNotFound(ResourceNotFound):
 
 class SessionNotFound(ResourceNotFound):
     """The session was not found."""
+
+
+class UserIsNotPartOfTheSession(ResourceNotFound):
+    """The member is not part of the session."""

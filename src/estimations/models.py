@@ -25,7 +25,7 @@ from common.loggers import logger
 from organizations.models import Organization
 from users.models import User
 
-from .exc import ResourceAlreadyExists, SequenceNotFound, SessionNotFound
+from .exc import ResourceAlreadyExists, SequenceNotFound, SessionNotFound, UserIsNotPartOfTheSession
 
 
 class Sequence(peewee.Model):
@@ -260,7 +260,7 @@ class Session(peewee.Model):
                              sequence=sequence_model)
         return session
 
-    def dump(self):
+    def dump(self, with_organization=True):
         data = {
             'id': str(self.id),
             'name': self.name,
@@ -272,7 +272,12 @@ class Session(peewee.Model):
             data['completed_at'] = self.completed_at.isoformat()
 
         data['sequence'] = self.sequence.dump()
-        data['organization'] = self.organization.dump()
+
+        if with_organization:
+            data['organization'] = self.organization.dump()
+
+        if self.session_members:
+            data['members'] = [member.user.dump() for member in self.session_members]
 
         return data
 
@@ -297,6 +302,36 @@ class SessionMember(peewee.Model):
         database = database
 
         table_name = 'session_members'
+
+    @classmethod
+    def lookup(cls, session: Session, user: User) -> 'SessionMember':
+        query = cls.select().where((cls.session == session) & (cls.user == user))
+
+        try:
+            member = query.get()
+        except cls.DoesNotExist as e:
+            raise UserIsNotPartOfTheSession(f'User({user.id}) has not join '
+                                            f'the Session({session.id})') from e
+        else:
+            return member
+
+    def leave(self):
+        query = SessionMember.delete().where(
+            (SessionMember.session == self.session) &
+            (SessionMember.user == self.user)
+        )
+
+        return query.execute()
+
+    def dump(self, with_user=True):
+        data = {
+            'session': self.session.dump(),
+        }
+
+        if with_user:
+            data['user'] = self.user.dump(with_organization=False)
+
+        return data
 
 
 class Task(peewee.Model):

@@ -51,3 +51,17 @@ sequence:
             required: True
 """
 CREATE_SESSION = yaml.safe_load(_CREATE_SESSION)
+
+
+_JOIN_SESSION = """
+user:
+    type: dict
+    required: True
+    empty: False
+    schema:
+        id:
+            type: string
+            required: True
+            empty: False
+"""
+JOIN_SESSION = yaml.safe_load(_JOIN_SESSION)
