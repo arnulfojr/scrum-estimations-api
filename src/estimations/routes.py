@@ -5,14 +5,17 @@ from cerberus import Validator
 from flask import jsonify, make_response, request
 
 from estimations import schemas
+from organizations.exceptions import NotFound as OrganizationNotFound
 
 from .app import estimations_app
-from .exc import ResourceAlreadyExists, SequenceNotFound
-from .models import Sequence, Value
+from .exc import ResourceAlreadyExists, SequenceNotFound, SessionNotFound
+from .models import Sequence, Session, Value
 
 
 @estimations_app.errorhandler(SequenceNotFound)
-def handle_not_found(error: Union[SequenceNotFound, None]):
+@estimations_app.errorhandler(OrganizationNotFound)
+@estimations_app.errorhandler(SessionNotFound)
+def handle_not_found(error: Union[OrganizationNotFound, SequenceNotFound, None]):
     return make_response(jsonify({
         'message': str(error),
     }), HTTPStatus.NOT_FOUND)
@@ -69,6 +72,12 @@ def remove_sequence(name: str):
         }), HTTPStatus.NOT_FOUND)
 
     sequence = Sequence.lookup(name)
+
+    if len(sequence.sessions):
+        return make_response(jsonify({
+            'message': f'The sequence has sessions and therefore can not be deleted',
+        }), HTTPStatus.UNPROCESSABLE_ENTITY)
+
     sequence.delete_instance()
 
     return make_response(jsonify(None), HTTPStatus.NO_CONTENT)
@@ -122,3 +131,31 @@ def remove_values_from_sequence(name: str):
     sequence.remove_values()
 
     return make_response(jsonify({}), HTTPStatus.NO_CONTENT)
+
+
+@estimations_app.route('/sessions/<code>', methods=['GET'])
+def get_session(code: str):
+    if not code:
+        return make_response(jsonify({
+            'message': 'Please provide the session identifier.',
+        }), HTTPStatus.NOT_FOUND)
+
+    session = Session.lookup(code)
+
+    return make_response(jsonify(session.dump()), HTTPStatus.OK)
+
+
+@estimations_app.route('/sessions/', methods=['POST'])
+def create_session():
+    payload = request.get_json()
+
+    validator = Validator()
+    if not validator.validate(payload, schemas.CREATE_SESSION):
+        return make_response(
+            jsonify(validator.errors),
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    session = Session.from_data(**payload)
+
+    return make_response(jsonify(session.dump()), HTTPStatus.CREATED)

@@ -88,7 +88,7 @@ class User(peewee.Model):
 
         return self
 
-    def dict_dump(self, with_organization: bool = False):
+    def dump(self, with_organization: bool = False):
         """Dump the object to a primitive dictionary."""
         user = {
             'id': str(self.id),
@@ -100,7 +100,7 @@ class User(peewee.Model):
 
         if with_organization:
             if self.organization:
-                user['organization'] = self.organization.dict_dump(with_users=False)
+                user['organization'] = self.organization.dump(with_users=False)
             else:
                 user['organization'] = None
 

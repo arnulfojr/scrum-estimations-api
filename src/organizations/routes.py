@@ -28,7 +28,7 @@ def handle_organization_not_found(error: Union[NotFound, UserNotFound]):
 def get_organizations(org_id: str):
     organization = Organization.lookup(org_id)
 
-    payload = organization.dict_dump()
+    payload = organization.dump()
     return make_response(jsonify(payload), HTTPStatus.OK)
 
 
@@ -44,7 +44,7 @@ def create_organization():
         )
 
     organization = Organization.create_from(payload)
-    data = organization.dict_dump()
+    data = organization.dump()
     return make_response(jsonify(data), HTTPStatus.CREATED)
 
 
@@ -82,7 +82,7 @@ def update_organization(org_id: str):
     organization.save()
 
     return make_response(
-        jsonify(organization.dict_dump()),
+        jsonify(organization.dump()),
         HTTPStatus.OK,
     )
 
@@ -107,8 +107,8 @@ def add_user_to_organization(org_id: str):
 
     return make_response(
         jsonify({
-            'organization': organization.dict_dump(with_users=True),
-            'user': user.dict_dump(with_organization=False),
+            'organization': organization.dump(with_users=True),
+            'user': user.dump(with_organization=False),
         }),
         HTTPStatus.CREATED,
     )

@@ -13,3 +13,7 @@ class ResourceNotFound(EstimationsException):
 
 class SequenceNotFound(ResourceNotFound):
     """The Sequence was not found."""
+
+
+class SessionNotFound(ResourceNotFound):
+    """The session was not found."""

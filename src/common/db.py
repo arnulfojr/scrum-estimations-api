@@ -1,14 +1,15 @@
 """Database singleton."""
-import peewee
+from playhouse.pool import PooledMySQLDatabase
 
 from settings import db
 
 
-database = peewee.MySQLDatabase(db.DATABASE,
-                                host=db.HOST,
-                                port=db.PORT,
-                                user=db.USER,
-                                password=db.PASSWORD)
+database = PooledMySQLDatabase(db.DATABASE,
+                               host=db.HOST,
+                               port=db.PORT,
+                               user=db.USER,
+                               password=db.PASSWORD,
+                               max_connections=2)
 
 
 def connect(*args, **kwargs):

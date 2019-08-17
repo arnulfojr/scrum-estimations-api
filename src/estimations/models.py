@@ -25,7 +25,7 @@ from common.loggers import logger
 from organizations.models import Organization
 from users.models import User
 
-from .exc import ResourceAlreadyExists, SequenceNotFound
+from .exc import ResourceAlreadyExists, SequenceNotFound, SessionNotFound
 
 
 class Sequence(peewee.Model):
@@ -215,9 +215,11 @@ class Session(peewee.Model):
 
     name = peewee.CharField()
 
-    organization = peewee.ForeignKeyField(Organization, related_name='sessions')
+    organization = peewee.ForeignKeyField(Organization, related_name='sessions',
+                                          on_delete='CASCADE')
 
-    sequence = peewee.ForeignKeyField(Sequence, related_name='sessions')
+    sequence = peewee.ForeignKeyField(Sequence, related_name='sessions',
+                                      column_name='sequence')
 
     completed = peewee.BooleanField(default=False)
 
@@ -230,6 +232,48 @@ class Session(peewee.Model):
         database = database
 
         table_name = 'sessions'
+
+    @classmethod
+    def lookup(cls, id: str):
+        query = cls.select().where(cls.id == id)
+        try:
+            session = query.get()
+        except cls.DoesNotExist as e:
+            raise SessionNotFound(f'Session with name {id} was not found') from e
+        else:
+            return session
+
+    @classmethod
+    def from_data(cls, name, organization: dict, sequence: dict) -> 'Session':
+        try:
+            organization_id = organization['id']
+            sequence_name = sequence['name']
+        except KeyError as e:
+            logger.error(f'Expected the organization to have an ID or the Sequence to have a name - {e}')
+            raise
+
+        sequence_model = Sequence.lookup(sequence_name)
+        organization_model = Organization.lookup(organization_id)
+        session = cls.create(name=name,
+                             organization=organization_model,
+                             sequence=sequence_model)
+        return session
+
+    def dump(self):
+        data = {
+            'id': str(self.id),
+            'name': self.name,
+            'completed': self.completed,
+            'created_at': self.completed_at.isoformat(),
+        }
+
+        if self.completed and self.completed_at:
+            data['completed_at'] = self.completed_at.isoformat()
+
+        data['sequence'] = self.sequence.dump()
+        data['organization'] = self.organization.dump()
+
+        return data
 
 
 class SessionMember(peewee.Model):

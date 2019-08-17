@@ -1,0 +1,96 @@
+---
+
+test_name: Testing the integrity of the model's relationship
+
+includes:
+  - !include vars/common.yaml
+
+stages:
+  - name: Create organization for the session
+    request:
+      url: "http://{hostname:s}:5000/organizations/"
+      method: POST
+      json:
+        name: "My Test Organization"
+    response:
+      status_code: 201
+      body:
+        id: !anystr
+        name: "My Test Organization"
+      save:
+        body:
+          org_id: id
+          org_name: name
+
+  - name: Create a valid sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/"
+      method: POST
+      json:
+        name: "fibonacci-series-test"
+    response:
+      status_code: 201
+      body:
+        name: "fibonacci-series-test"
+        created_at: !anystr
+      save:
+        body:
+          sequence_name: name
+
+  - name: Create a session
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/"
+      method: POST
+      json:
+        name: pre-session
+        sequence:
+          name: "{sequence_name:s}"
+        organization:
+          id: "{org_id:s}"
+    response:
+      status_code: 201
+      body:
+        completed: False
+        created_at: !anystr
+        id: !anystr
+        name: pre-session
+        organization:
+          id: "{org_id:s}"
+          name: "{org_name:s}"
+        sequence:
+          name: "{sequence_name:s}"
+          created_at: !anystr
+          values: []
+      save:
+        body:
+          session_id: id
+
+  - name: Fail to delete the sequence due to active sessions
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/{sequence_name:s}"
+      method: DELETE
+    response:
+      status_code: 422
+      body:
+        message: !anystr
+
+  - name: Delete the organization must delete the session
+    request:
+      url: "http://{hostname:s}:5000/organizations/{org_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Getting session must fail with 404
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}"
+      method: GET
+    response:
+      status_code: 404
+
+  - name: Delete the sequence must be ok
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/{sequence_name:s}"
+      method: DELETE
+    response:
+      status_code: 204
