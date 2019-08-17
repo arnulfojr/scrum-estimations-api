@@ -1,0 +1,85 @@
+---
+test_name: Sequence value test endpoints
+
+includes:
+  - !include vars/common.yaml
+
+stages:
+  - name: Create a valid sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/"
+      method: POST
+      json:
+        name: "dummy-sequence"
+    response:
+      status_code: 201
+      body:
+        name: "dummy-sequence"
+        created_at: !anystr
+      save:
+        body:
+          sequence_name: name
+
+  - name: Add values to sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/{sequence_name:s}/values/"
+      method: POST
+      json:
+        - value: 0.0
+        - value: 0.5
+        - value: 1.0
+        - value: 2.0
+        - value: 3.0
+        - value: 5.0
+        - value: 8.0
+        - value: 13.0
+        - value: 20.0
+        - name: '?'
+        - name: Coffee
+        - name: Impossible
+    response:
+      status_code: 201
+      body:
+        - id: !anystr
+          value: 0.0
+        - id: !anystr
+          value: 0.5
+        - id: !anystr
+          value: 1.0
+        - id: !anystr
+          value: 2.0
+        - id: !anystr
+          value: 3.0
+        - id: !anystr
+          value: 5.0
+        - id: !anystr
+          value: 8.0
+        - id: !anystr
+          value: 13.0
+        - id: !anystr
+          value: 20.0
+        - id: !anystr
+          name: '?'
+        - id: !anystr
+          name: Coffee
+          value: null
+        - id: !anystr
+          name: Impossible
+          value: null
+
+  - name: Delete the sequence values
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/{sequence_name:s}/values"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Check the sequence still exists
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/{sequence_name:s}"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        name: "{sequence_name:s}"
+        created_at: !anystr

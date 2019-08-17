@@ -57,9 +57,9 @@ def delete_organization(org_id: str):
         return make_response(jsonify({
             'message': 'Please remove all users from the organization',
         }), HTTPStatus.UNPROCESSABLE_ENTITY)
-    else:
-        organization.delete_instance()
-        return make_response(jsonify(None), HTTPStatus.NO_CONTENT)
+
+    organization.delete_instance()
+    return make_response(jsonify(None), HTTPStatus.NO_CONTENT)
 
 
 @organizations_app.route('/<org_id>', methods=['PATCH'])

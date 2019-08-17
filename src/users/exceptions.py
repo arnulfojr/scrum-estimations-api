@@ -2,7 +2,7 @@ class UserException(Exception):
     """User base exception."""
 
     def __str__(self):
-        if len(self.args) > 0:
+        if self.args:
             message = self.args[0]
         elif hasattr(self, 'message'):
             message = self.message

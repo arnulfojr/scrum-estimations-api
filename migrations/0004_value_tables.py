@@ -9,15 +9,18 @@ def upgrade(migrator):
         table.uuid('id', constraints=['PRIMARY KEY'])
         table.foreign_key('char', 'sequence',
                           references='sequences.name',
+                          on_delete='CASCADE',
                           null=False)
         table.foreign_key('uuid', 'previous',
                           references=f'{TABLE_NAME}.id',
+                          on_delete='SET NULL',
                           null=True)
         table.foreign_key('uuid', 'next',
                           references=f'{TABLE_NAME}.id',
+                          on_delete='SET NULL',
                           null=True)
         table.char('name', null=True, max_length=255)
-        table.integer('value', null=True)
+        table.decimal('value', null=True)
         table.integer('created_at')
 
 

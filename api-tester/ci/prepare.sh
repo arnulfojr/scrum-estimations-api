@@ -10,9 +10,9 @@ if [ -z "${DOCKER_NETWORK_NAME}" ]; then
 fi
 
 # Wait for the db to boot
-DOCKER_NETWORK_ID=`docker network ls --filter=name=${DOCKER_NETWORK_NAME} --format="{{.ID}}"`
+DOCKER_NETWORK_ID="$(docker network ls --filter=name=${DOCKER_NETWORK_NAME} --format='{{.ID}}')"
 if [ -z "${DOCKER_NETWORK_ID}" ]; then
-  DOCKER_NETWORK_ID=`docker network create ${DOCKER_NETWORK_NAME}`
+  DOCKER_NETWORK_ID=$(docker network create ${DOCKER_NETWORK_NAME})
   echo "------ Network not found, created ${DOCKER_NETWORK_NAME}"
 fi
 echo "--- DOCKER_NETWORK_ID set to '${DOCKER_NETWORK_ID}'"
