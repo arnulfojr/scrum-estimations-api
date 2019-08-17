@@ -317,9 +317,7 @@ class SessionMember(peewee.Model):
 
     def leave(self):
         query = SessionMember.delete().where(
-            (SessionMember.session == self.session) &
-            (SessionMember.user == self.user)
-        )
+            (SessionMember.session == self.session) & (SessionMember.user == self.user))
 
         return query.execute()
 
