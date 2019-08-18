@@ -1,5 +1,6 @@
 from decimal import Decimal
 from uuid import uuid4
+from unittest import mock
 
 import pytest
 
@@ -122,3 +123,48 @@ def test_sorted_values_for_sequence_without_root(sequence_with_no_root_value):
     assert actual_values[1].name == 'Fourth'
     assert actual_values[2].name == 'Second'
     assert actual_values[3].name == 'First'
+
+
+@pytest.fixture(scope='module')
+def value_list():
+    return [
+        {
+            'name': 'Two',
+            'value': 2.0,
+        },
+        {
+            'name': 'One',
+            'value': 1.0
+        },
+        {
+            'name': 'Third',
+            'value': 3.0
+        },
+        {
+            'name': '?',
+        },
+        {
+            'name': 'Coffee',
+        }
+    ]
+
+
+@mock.patch('estimations.models.database')
+@mock.patch.object(Value, 'save')
+def test_value_from_list(save_mock, database_mock, value_list):
+    values = Value.from_list(value_list, None)
+    assert values
+    assert database_mock.atomic.called
+    # assert the order of values
+    for value in values:
+        assert value.sequence_id is None
+        if value.value:
+            assert isinstance(value.value, Decimal)
+        assert value.name
+        assert value.id is not None
+
+    assert values[0].value <= values[1].value <= values[2].value
+    assert values[-1].value is None
+    assert values[-1].name == 'Coffee'
+    assert values[-2].value is None
+    assert values[-2].name == '?'

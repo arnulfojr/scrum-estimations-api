@@ -32,3 +32,7 @@ jobs:
       - store_artifacts:
           path: api-tester/out
           destination: api-tester/out
+
+      - store_artifacts:
+          path: tests/out
+          destination: tests/out

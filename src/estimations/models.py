@@ -169,13 +169,17 @@ class Value(peewee.Model):
                     logger.error(f'Value({val}) was not Decimal and will use None')
                     normalized_value = None
 
-                value = cls.create(name=item.get('name'),
-                                   sequence=sequence,
-                                   value=normalized_value)
+                value = cls(name=item.get('name'),
+                            sequence=sequence,
+                            value=normalized_value)
+                value.save(force_insert=True)
                 values.append(value)
 
         numeric_values = list(filter(lambda x: x.value is not None, values))
         numeric_values.sort(key=lambda v: v.value)
+
+        non_numeric_values = list(filter(lambda x: x.value is None, values))
+        non_numeric_values.sort(key=lambda v: v.name)
 
         for previous, current, nxt in previous_and_next(numeric_values):
             current.previous = previous
@@ -185,7 +189,11 @@ class Value(peewee.Model):
             for value in numeric_values:
                 value.save()
 
-        return values
+        sorted_values = list()
+        sorted_values.extend(numeric_values)
+        sorted_values.extend(non_numeric_values)
+
+        return sorted_values
 
     def dump(self):
         payload = {

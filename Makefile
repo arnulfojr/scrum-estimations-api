@@ -33,7 +33,7 @@ api-test:
 
 unit-tests:
 	@docker build --tag ${UNIT_TESTER_IMAGE} --file ./tests/Dockerfile --quiet .
-	@docker run --rm ${UNIT_TESTER_IMAGE} /app/tests
+	@docker run --rm --volume ${PWD}/tests/out:/app/tests/out ${UNIT_TESTER_IMAGE} --junitxml=/app/tests/out/results.xml /app/tests
 .PHONY: unit-tests
 
 run:
