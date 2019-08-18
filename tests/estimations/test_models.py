@@ -99,14 +99,14 @@ def test_sorted_values_for_empty_sequence(sequence_without_values):
     actual_values = sequence_without_values.sorted_values
     assert actual_values is not None
     assert isinstance(actual_values, list)
-    assert len(actual_values) == 0
+    assert not actual_values
 
 
 def test_sorted_values_for_sequence_with_values(sequence_with_valid_linked_values):
     actual_values = sequence_with_valid_linked_values.sorted_values
     assert actual_values is not None
     assert isinstance(actual_values, list)
-    assert len(actual_values) > 0
+    assert actual_values
     assert actual_values[0].value == Decimal('0.0')
     assert actual_values[1].value == Decimal('1.0')
     assert actual_values[2].value == Decimal('2.0')
@@ -117,7 +117,7 @@ def test_sorted_values_for_sequence_without_root(sequence_with_no_root_value):
     actual_values = sequence_with_no_root_value.sorted_values
     assert actual_values is not None
     assert isinstance(actual_values, list)
-    assert len(actual_values) > 0
+    assert actual_values
     # values aren't supposed to be ordered
     assert actual_values[0].name == 'Third'
     assert actual_values[1].name == 'Fourth'
