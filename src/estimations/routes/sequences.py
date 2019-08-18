@@ -1,21 +1,13 @@
 from http import HTTPStatus
-from typing import Union
 
 from cerberus import Validator
 from flask import jsonify, make_response, request
 
 from estimations import schemas
+from estimations.exc import ResourceAlreadyExists
 
-from .app import estimations_app
-from .exc import ResourceAlreadyExists, SequenceNotFound
-from .models import Sequence, Value
-
-
-@estimations_app.errorhandler(SequenceNotFound)
-def handle_not_found(error: Union[SequenceNotFound, None]):
-    return make_response(jsonify({
-        'message': str(error),
-    }), HTTPStatus.NOT_FOUND)
+from ..app import estimations_app
+from ..models import Sequence, Value
 
 
 @estimations_app.route('/sequences', methods=['GET'])
@@ -69,6 +61,12 @@ def remove_sequence(name: str):
         }), HTTPStatus.NOT_FOUND)
 
     sequence = Sequence.lookup(name)
+
+    if sequence.sessions:
+        return make_response(jsonify({
+            'message': f'The sequence has sessions and therefore can not be deleted',
+        }), HTTPStatus.UNPROCESSABLE_ENTITY)
+
     sequence.delete_instance()
 
     return make_response(jsonify(None), HTTPStatus.NO_CONTENT)

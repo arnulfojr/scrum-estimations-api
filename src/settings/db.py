@@ -1,13 +1,13 @@
 import os
 
 
-HOST = os.environ['DB_HOST']
+HOST = os.getenv('DB_HOST')
 
 PORT = int(os.getenv('DB_PORT', 3306))
 
-USER = os.environ['DB_USER']
+USER = os.getenv('DB_USER')
 
-PASSWORD = os.environ['DB_PASSWORD']
+PASSWORD = os.getenv('DB_PASSWORD')
 
 DATABASE = os.getenv('DB_NAME', 'estimations')
 

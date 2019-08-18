@@ -220,3 +220,10 @@ stages:
       method: DELETE
     response:
       status_code: 204
+
+  - name: Delete the organization
+    request:
+      url: "http://{hostname:s}:5000/organizations/{created_organization_id:s}"
+      method: DELETE
+    response:
+      status_code: 204

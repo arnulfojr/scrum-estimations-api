@@ -24,7 +24,7 @@ class Organization(peewee.Model):
 
         database = database
 
-        db_table = 'organizations'
+        table_name = 'organizations'
 
     @classmethod
     def lookup(cls, identifier) -> 'Organization':
@@ -45,15 +45,15 @@ class Organization(peewee.Model):
             txn.commit()
         return organization
 
-    def dict_dump(self, with_users: bool = True) -> dict:
-        dump = {
+    def dump(self, with_users: bool = True) -> dict:
+        data = {
             'id': str(self.id),
             'name': self.name,
         }
 
         if with_users and self.users:
-            users = [u.dict_dump(with_organization=False)
+            users = [u.dump(with_organization=False)
                      for u in self.users]
             users.sort(key=lambda u: u['name'])
-            dump['users'] = users
-        return dump
+            data['users'] = users
+        return data

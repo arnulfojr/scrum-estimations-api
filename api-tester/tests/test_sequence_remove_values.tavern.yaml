@@ -83,3 +83,10 @@ stages:
       body:
         name: "{sequence_name:s}"
         created_at: !anystr
+
+  - name: Delete the sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/{sequence_name:s}"
+      method: DELETE
+    response:
+      status_code: 204

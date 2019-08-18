@@ -28,7 +28,7 @@ def handle_user_already_exists_error(error: UserAlreadyExists):
 def get_user(user_id: str):
     """Get the user's information."""
     user = User.lookup(user_id)
-    return make_response(jsonify(user.dict_dump()), HTTPStatus.OK)
+    return make_response(jsonify(user.dump()), HTTPStatus.OK)
 
 
 @users_app.route('/<user_id>/organization', methods=['GET'])
@@ -41,7 +41,7 @@ def get_user_with_organizations(user_id: str):
         }), HTTPStatus.NOT_FOUND)
         return response
 
-    return user.organization.dict_dump()
+    return user.organization.dump()
 
 
 @users_app.route('/', methods=['POST'])
@@ -55,7 +55,7 @@ def create_user():
 
     user = User.create_from(payload)
     return make_response(
-        jsonify(user.dict_dump(with_organization=True)),
+        jsonify(user.dump(with_organization=True)),
         HTTPStatus.CREATED,
     )
 
@@ -69,7 +69,7 @@ def update_user(user_id: str):
     user.save()
 
     return make_response(
-        jsonify(user.dict_dump(with_organization=True)),
+        jsonify(user.dump(with_organization=True)),
         HTTPStatus.OK,
     )
 

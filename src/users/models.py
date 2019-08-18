@@ -3,8 +3,8 @@
 Contains the models of all the users regarding the admin tool.
 """
 from datetime import datetime
-from typing import Optional
-from uuid import uuid4
+from typing import Optional, Union
+from uuid import UUID, uuid4
 
 import peewee
 
@@ -48,7 +48,7 @@ class User(peewee.Model):
 
         database = database
 
-        db_table = 'users'
+        table_name = 'users'
 
     @classmethod
     def lookup(cls, identifier) -> Optional['User']:
@@ -88,7 +88,19 @@ class User(peewee.Model):
 
         return self
 
-    def dict_dump(self, with_organization: bool = False):
+    def belongs_to_organization(self, organization: Union[Organization, UUID, str]) -> bool:
+        if not self.organization:
+            return False
+
+        if isinstance(organization, Organization):
+            return self.organization == organization
+
+        if isinstance(organization, UUID):
+            organization = str(organization)
+
+        return str(self.organization.id) == organization
+
+    def dump(self, with_organization: bool = False):
         """Dump the object to a primitive dictionary."""
         user = {
             'id': str(self.id),
@@ -100,7 +112,7 @@ class User(peewee.Model):
 
         if with_organization:
             if self.organization:
-                user['organization'] = self.organization.dict_dump(with_users=False)
+                user['organization'] = self.organization.dump(with_users=False)
             else:
                 user['organization'] = None
 

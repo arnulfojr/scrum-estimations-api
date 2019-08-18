@@ -13,3 +13,15 @@ class ResourceNotFound(EstimationsException):
 
 class SequenceNotFound(ResourceNotFound):
     """The Sequence was not found."""
+
+
+class SessionNotFound(ResourceNotFound):
+    """The session was not found."""
+
+
+class UserIsNotPartOfTheSession(ResourceNotFound):
+    """The member is not part of the session."""
+
+
+class TaskNotFound(ResourceNotFound):
+    """The task was not found."""

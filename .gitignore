@@ -3,6 +3,7 @@
 .vscode
 *.swp
 *.override.*
+tests/out/*.xml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

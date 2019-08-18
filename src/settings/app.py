@@ -1,10 +1,10 @@
 import os
 
 
-SERVICE_NAME = os.environ['SERVICE_NAME']
+SERVICE_NAME = os.getenv('SERVICE_NAME')
 
-HOSTNAME = HOST = os.environ['HOSTNAME']
+HOSTNAME = HOST = os.getenv('HOSTNAME')
 
-PORT = os.environ['PORT']
+PORT = int(os.getenv('PORT', 5000))
 
 ACCESS_LOG_FORMAT = '%a %t "%r" %s %b "%{Referer}i" "%{User-Agent}i"'

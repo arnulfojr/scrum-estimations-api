@@ -1,0 +1,212 @@
+---
+test_name: Testing the session's life cycle
+
+includes:
+  - !include vars/common.yaml
+  - !include vars/session_users.yaml
+
+stages:
+  - name: Create organization for the session
+    request:
+      url: "http://{hostname:s}:5000/organizations/"
+      method: POST
+      json:
+        name: "My Dummy Organization"
+    response:
+      status_code: 201
+      body:
+        id: !anystr
+        name: "My Dummy Organization"
+      save:
+        body:
+          org_id: id
+          org_name: name
+
+  - name: Create user directly within organization as Admin
+    request:
+      url: "http://{hostname:s}:5000/users/"
+      method: POST
+      json:
+        email: "{user1_email:s}"
+        name: "{user1_name:s}"
+        password: "{test_password:s}"
+        role: "ADMIN"
+        organization: "{org_id:s}"
+    response:
+      status_code: 201
+      body:
+        id: !anystr
+        name: "{user1_name:s}"
+        email: "{user1_email:s}"
+        role: "ADMIN"
+        registered_on: !anystr
+        organization:
+          id: "{org_id:s}"
+          name: "{org_name:s}"
+      save:
+        body:
+          user_1_id: id
+
+  - name: Create a valid sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/"
+      method: POST
+      json:
+        name: "fibonacci-series-test-2"
+    response:
+      status_code: 201
+      body:
+        name: "fibonacci-series-test-2"
+        created_at: !anystr
+      save:
+        body:
+          sequence_name: name
+
+  - name: Create a session
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/"
+      method: POST
+      json:
+        name: my-session
+        sequence:
+          name: "{sequence_name:s}"
+        organization:
+          id: "{org_id:s}"
+    response:
+      status_code: 201
+      body:
+        completed: False
+        created_at: !anystr
+        id: !anystr
+        name: my-session
+        organization:
+          id: "{org_id:s}"
+          name: "{org_name:s}"
+        sequence:
+          name: "{sequence_name:s}"
+          created_at: !anystr
+          values: []
+      save:
+        body:
+          session_id: id
+          session_name: name
+
+  - name: Join user as session member
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}/members/"
+      method: PUT
+      json:
+        user:
+          id: "{user_1_id:s}"
+    response:
+      status_code: 200
+      body:
+        session:
+          completed: False
+          created_at: !anystr
+          id: "{session_id:s}"
+          name: "{session_name:s}"
+          members:
+            - id: "{user_1_id:s}"
+              name: "{user1_name:s}"
+              email: "{user1_email:s}"
+              registered_on: !anystr
+              role: !anystr
+          sequence:
+            created_at: !anystr
+            name: "{sequence_name:s}"
+            values: []
+          organization:
+            id: "{org_id:s}"
+            name: "{org_name:s}"
+            users: !anything
+        user:
+          id: "{user_1_id:s}"
+          email: "{user1_email:s}"
+          name: "{user1_name:s}"
+          registered_on: !anystr
+          role: !anystr
+
+  - name: Join the same user again as session member must fail
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}/members/"
+      method: PUT
+      json:
+        user:
+          id: "{user_1_id:s}"
+    response:
+      status_code: 422
+
+  - name: Create a task for the session and check the session has it
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}/tasks/"
+      method: POST
+      json:
+        name: TASK-1234
+    response:
+      status_code: 201
+      body:
+        id: !anystr
+        name: TASK-1234
+        created_at: !anystr
+        session:
+          completed: False
+          created_at: !anystr
+          id: "{session_id:s}"
+          name: "{session_name:s}"
+          members:
+            - id: "{user_1_id:s}"
+              name: "{user1_name:s}"
+              email: "{user1_email:s}"
+              registered_on: !anystr
+              role: !anystr
+          sequence:
+            created_at: !anystr
+            name: "{sequence_name:s}"
+            values: []
+          tasks:
+            - name: TASK-1234
+              id: !anystr
+              created_at: !anystr
+
+  - name: Remove the member from session
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}/members/{user_1_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Remove user from organization from the organization's DELETE endpoint
+    request:
+      url: "http://{hostname:s}:5000/organizations/{org_id:s}/users/{user_1_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Delete the user 1
+    request:
+      url: "http://{hostname:s}:5000/users/{user_1_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Delete the organization must delete the session
+    request:
+      url: "http://{hostname:s}:5000/organizations/{org_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Getting session must fail with 404
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}"
+      method: GET
+    response:
+      status_code: 404
+
+  - name: Delete the sequence must be ok
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/{sequence_name:s}"
+      method: DELETE
+    response:
+      status_code: 204

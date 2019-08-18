@@ -25,3 +25,52 @@ values:
                 empty: False
 """
 CREATE_VALUES_SCHEMA = yaml.safe_load(_CREATE_VALUES)
+
+
+_CREATE_SESSION = """
+name:
+    type: string
+    required: True
+    empty: False
+
+organization:
+    type: dict
+    required: True
+    schema:
+        id:
+            type: string
+            empty: False
+            required: True
+sequence:
+    type: dict
+    required: True
+    schema:
+        name:
+            type: string
+            empty: False
+            required: True
+"""
+CREATE_SESSION = yaml.safe_load(_CREATE_SESSION)
+
+
+_JOIN_SESSION = """
+user:
+    type: dict
+    required: True
+    empty: False
+    schema:
+        id:
+            type: string
+            required: True
+            empty: False
+"""
+JOIN_SESSION = yaml.safe_load(_JOIN_SESSION)
+
+
+_CREATE_TASK = """
+name:
+    type: string
+    required: True
+    empty: False
+"""
+CREATE_TASK = EDIT_TASK = yaml.safe_load(_CREATE_TASK)
