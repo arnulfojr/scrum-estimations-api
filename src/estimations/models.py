@@ -128,15 +128,15 @@ class Value(peewee.Model):
 
     id = peewee.UUIDField(primary_key=True, default=uuid4)
 
-    sequence = peewee.ForeignKeyField(Sequence, field='name', related_name='values',
+    sequence = peewee.ForeignKeyField(Sequence, field='name', backref='values',
                                       on_delete='CASCADE',
                                       column_name='sequence')
 
-    previous = peewee.ForeignKeyField('self', null=True, related_name='next_value',
+    previous = peewee.ForeignKeyField('self', null=True, backref='next_value',
                                       on_delete='SET NULL',
                                       column_name='previous')
 
-    next = peewee.ForeignKeyField('self', null=True, related_name='previous_value',
+    next = peewee.ForeignKeyField('self', null=True, backref='previous_value',
                                   on_delete='SET NULL',
                                   column_name='next')
 
@@ -216,10 +216,10 @@ class Session(peewee.Model):
 
     name = peewee.CharField()
 
-    organization = peewee.ForeignKeyField(Organization, related_name='sessions',
+    organization = peewee.ForeignKeyField(Organization, backref='sessions',
                                           on_delete='CASCADE')
 
-    sequence = peewee.ForeignKeyField(Sequence, related_name='sessions',
+    sequence = peewee.ForeignKeyField(Sequence, backref='sessions',
                                       column_name='sequence')
 
     completed = peewee.BooleanField(default=False)
@@ -289,10 +289,10 @@ class Session(peewee.Model):
 class SessionMember(peewee.Model):
     """The session members."""
 
-    session = peewee.ForeignKeyField(Session, related_name='session_members',
+    session = peewee.ForeignKeyField(Session, backref='session_members',
                                      column_name='session')
 
-    user = peewee.ForeignKeyField(User, related_name='session_user',
+    user = peewee.ForeignKeyField(User, backref='session_user',
                                   column_name='user')
 
     class Meta:
@@ -343,7 +343,7 @@ class Task(peewee.Model):
 
     name = peewee.CharField(index=True)
 
-    session = peewee.ForeignKeyField(Session, related_name='tasks',
+    session = peewee.ForeignKeyField(Session, backref='tasks',
                                      on_delete='CASCADE',
                                      column_name='session')
 
@@ -403,11 +403,11 @@ class Estimation(peewee.Model):
 
     id = peewee.UUIDField(primary_key=True, default=uuid4)
 
-    task = peewee.ForeignKeyField(Task, related_name='estimations')
+    task = peewee.ForeignKeyField(Task, backref='estimations')
 
-    user = peewee.ForeignKeyField(User, related_name='estimations')
+    user = peewee.ForeignKeyField(User, backref='estimations')
 
-    value = peewee.ForeignKeyField(Value, related_name='estimations')
+    value = peewee.ForeignKeyField(Value, backref='estimations')
 
     created_at = peewee.TimestampField(default=datetime.now)
 
@@ -425,7 +425,7 @@ class Estimation(peewee.Model):
 class EstimationSummary(peewee.Model):
     """Estimation summary."""
 
-    task = peewee.ForeignKeyField(Task, related_name='summaries')
+    task = peewee.ForeignKeyField(Task, backref='summaries')
 
     closet_value = peewee.ForeignKeyField(Value)
 

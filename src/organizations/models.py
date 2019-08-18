@@ -24,7 +24,7 @@ class Organization(peewee.Model):
 
         database = database
 
-        db_table = 'organizations'
+        table_name = 'organizations'
 
     @classmethod
     def lookup(cls, identifier) -> 'Organization':

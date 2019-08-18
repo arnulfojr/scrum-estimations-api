@@ -48,7 +48,7 @@ class User(peewee.Model):
 
         database = database
 
-        db_table = 'users'
+        table_name = 'users'
 
     @classmethod
     def lookup(cls, identifier) -> Optional['User']:
