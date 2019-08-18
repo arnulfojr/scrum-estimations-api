@@ -12,6 +12,7 @@ def upgrade(migrator):
 
         table.foreign_key('char', 'session',
                           references='sessions.id',
+                          on_delete='CASCADE',
                           null=False)
         table.integer('created_at')
 

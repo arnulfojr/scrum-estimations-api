@@ -137,6 +137,38 @@ stages:
     response:
       status_code: 422
 
+  - name: Create a task for the session and check the session has it
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}/tasks/"
+      method: POST
+      json:
+        name: TASK-1234
+    response:
+      status_code: 201
+      body:
+        id: !anystr
+        name: TASK-1234
+        created_at: !anystr
+        session:
+          completed: False
+          created_at: !anystr
+          id: "{session_id:s}"
+          name: "{session_name:s}"
+          members:
+            - id: "{user_1_id:s}"
+              name: "{user1_name:s}"
+              email: "{user1_email:s}"
+              registered_on: !anystr
+              role: !anystr
+          sequence:
+            created_at: !anystr
+            name: "{sequence_name:s}"
+            values: []
+          tasks:
+            - name: TASK-1234
+              id: !anystr
+              created_at: !anystr
+
   - name: Remove the member from session
     request:
       url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}/members/{user_1_id:s}"

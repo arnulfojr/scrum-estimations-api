@@ -280,6 +280,9 @@ class Session(peewee.Model):
         if self.session_members:
             data['members'] = [member.user.dump() for member in self.session_members]
 
+        if self.tasks:
+            data['tasks'] = [task.dump(with_session=False) for task in self.tasks]
+
         return data
 
 
@@ -341,6 +344,7 @@ class Task(peewee.Model):
     name = peewee.CharField(index=True)
 
     session = peewee.ForeignKeyField(Session, related_name='tasks',
+                                     on_delete='CASCADE',
                                      column_name='session')
 
     created_at = peewee.TimestampField(default=datetime.now)
@@ -381,13 +385,17 @@ class Task(peewee.Model):
         else:
             return task
 
-    def dump(self, with_organization=False):
-        return {
+    def dump(self, with_session=True, with_organization=False):
+        data = {
             'id': str(self.id),
             'name': self.name,
-            'session': self.session.dump(with_organization=with_organization),
             'created_at': self.created_at.isoformat(),
         }
+
+        if with_session:
+            data['session'] = self.session.dump(with_organization=with_organization)
+
+        return data
 
 
 class Estimation(peewee.Model):
