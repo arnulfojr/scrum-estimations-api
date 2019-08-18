@@ -2,6 +2,7 @@
 -include .env
 
 export DOCKER_NETWORK_NAME=scrum-apis
+export UNIT_TESTER_IMAGE=estimations-api-tester
 
 install:
 	pip install -r requirements.txt
@@ -29,6 +30,11 @@ api-test:
 	./api-tester/ci/prepare.sh
 	./api-tester/ci/run.sh
 .PHONY: api-test
+
+unit-tests:
+	@docker build --tag ${UNIT_TESTER_IMAGE} --file ./tests/Dockerfile --quiet .
+	@docker run --rm ${UNIT_TESTER_IMAGE} /app/tests
+.PHONY: unit-tests
 
 run:
 	@docker-compose -f docker-compose.yml \

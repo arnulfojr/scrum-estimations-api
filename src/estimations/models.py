@@ -175,6 +175,8 @@ class Value(peewee.Model):
                 values.append(value)
 
         numeric_values = list(filter(lambda x: x.value is not None, values))
+        numeric_values.sort(key=lambda v: v.value)
+
         for previous, current, nxt in previous_and_next(numeric_values):
             current.previous = previous
             current.next = nxt
