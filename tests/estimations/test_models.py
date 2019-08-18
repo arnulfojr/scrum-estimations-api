@@ -1,6 +1,6 @@
 from decimal import Decimal
-from uuid import uuid4
 from unittest import mock
+from uuid import uuid4
 
 import pytest
 
@@ -134,18 +134,18 @@ def value_list():
         },
         {
             'name': 'One',
-            'value': 1.0
+            'value': 1.0,
         },
         {
             'name': 'Third',
-            'value': 3.0
+            'value': 3.0,
         },
         {
             'name': '?',
         },
         {
             'name': 'Coffee',
-        }
+        },
     ]
 
 
