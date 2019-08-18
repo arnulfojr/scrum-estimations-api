@@ -111,6 +111,40 @@ def leave_session(session_id: str, user_id: str):
     return make_response(jsonify(None), HTTPStatus.NO_CONTENT)
 
 
+@estimations_app.route('/sessions/<session_id>/tasks', methods=['GET'])
+def get_session_tasks(session_id: str):
+    if not session_id:
+        return make_response(jsonify({
+            'message': 'Please provide the session identifier.',
+        }), HTTPStatus.NOT_FOUND)
+
+    session = Session.lookup(session_id)
+
+    return make_response(
+        jsonify([task.dump(with_session=False) for task in session.tasks]),
+        HTTPStatus.OK,
+    )
+
+
+@estimations_app.route('/sessions/<session_id>/tasks/<task>', methods=['GET'])
+def get_task_from_session(session_id: str, task: str):
+    if not session_id:
+        return make_response(jsonify({
+            'message': 'Please provide the session identifier.',
+        }), HTTPStatus.NOT_FOUND)
+
+    session = Session.lookup(session_id)
+
+    try:
+        task = Task.lookup(task, session=session)
+    except (TypeError, ValueError):
+        return make_response(jsonify({
+            'message': 'We could not infer the Task from the given input...',
+        }), HTTPStatus.BAD_REQUEST)
+
+    return make_response(jsonify(task.dump()), HTTPStatus.OK)
+
+
 @estimations_app.route('/sessions/<session_id>/tasks/', methods=['POST'])
 def add_task_to_session(session_id: str):
     if not session_id:

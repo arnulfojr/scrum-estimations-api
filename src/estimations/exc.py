@@ -25,3 +25,7 @@ class UserIsNotPartOfTheSession(ResourceNotFound):
 
 class TaskNotFound(ResourceNotFound):
     """The task was not found."""
+
+
+class ValueNotFound(ResourceNotFound):
+    """The value was not found."""

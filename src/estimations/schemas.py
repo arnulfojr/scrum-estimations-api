@@ -74,3 +74,23 @@ name:
     empty: False
 """
 CREATE_TASK = EDIT_TASK = yaml.safe_load(_CREATE_TASK)
+
+_CREATE_ESTIMATION = """
+value:
+    type: dict
+    required: True
+    schema:
+        id:
+            type: string
+            required: True
+            empty: False
+user:
+    type: dict
+    required: True
+    schema:
+        id:
+            type: string
+            required: True
+            empty: False
+"""
+CREATE_ESTIMATION = yaml.safe_load(_CREATE_ESTIMATION)

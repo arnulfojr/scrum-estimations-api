@@ -26,7 +26,7 @@ from organizations.models import Organization
 from users.models import User
 
 from .exc import ResourceAlreadyExists, SequenceNotFound, SessionNotFound
-from .exc import TaskNotFound, UserIsNotPartOfTheSession
+from .exc import TaskNotFound, UserIsNotPartOfTheSession, ValueNotFound
 
 
 class Sequence(peewee.Model):
@@ -157,6 +157,16 @@ class Value(peewee.Model):
         table_name = 'estimation_values'
 
     @classmethod
+    def lookup(cls, identifier: str):
+        query = cls.select().where(cls.id == identifier)
+        try:
+            value = query.get()
+        except cls.DoesNotExist as e:
+            raise ValueNotFound(f'No value for {identifier} was found') from e
+        else:
+            return value
+
+    @classmethod
     def from_list(cls, items: List[dict], sequence: Sequence) -> List['Value']:
         values = list()
 
@@ -271,7 +281,7 @@ class Session(peewee.Model):
                              sequence=sequence_model)
         return session
 
-    def dump(self, with_organization=True):
+    def dump(self, with_organization=True, with_tasks=True):
         data = {
             'id': str(self.id),
             'name': self.name,
@@ -290,7 +300,7 @@ class Session(peewee.Model):
         if self.session_members:
             data['members'] = [member.user.dump() for member in self.session_members]
 
-        if self.tasks:
+        if with_tasks and self.tasks:
             data['tasks'] = [task.dump(with_session=False) for task in self.tasks]
 
         return data
@@ -403,7 +413,8 @@ class Task(peewee.Model):
         }
 
         if with_session:
-            data['session'] = self.session.dump(with_organization=with_organization)
+            data['session'] = self.session.dump(with_tasks=True,
+                                                with_organization=with_organization)
 
         return data
 
@@ -413,11 +424,17 @@ class Estimation(peewee.Model):
 
     id = peewee.UUIDField(primary_key=True, default=uuid4)
 
-    task = peewee.ForeignKeyField(Task, backref='estimations')
+    task = peewee.ForeignKeyField(Task, backref='estimations',
+                                  column_name='task',
+                                  on_delete='CASCADE')
 
-    user = peewee.ForeignKeyField(User, backref='estimations')
+    user = peewee.ForeignKeyField(User, backref='estimations',
+                                  column_name='user',
+                                  on_delete='SET NULL')
 
-    value = peewee.ForeignKeyField(Value, backref='estimations')
+    value = peewee.ForeignKeyField(Value, backref='estimations',
+                                   column_name='value',
+                                   on_delete='SET NULL')
 
     created_at = peewee.TimestampField(default=datetime.now)
 
@@ -430,6 +447,14 @@ class Estimation(peewee.Model):
         database = database
 
         table_name = 'estimations'
+
+    def dump(self):
+        return {
+            'task': self.task.dump(),
+            'user': self.user.dump(),
+            'value': self.value.dump(),
+            'created_at': self.created_at.isoformat(),
+        }
 
 
 class EstimationSummary(peewee.Model):
