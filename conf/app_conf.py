@@ -9,7 +9,7 @@ worker_class = 'sync'
 
 bind = f'{HOSTNAME}:{PORT}'
 
-threads = 2
+threads = 2 if workers > 1 else 4
 
 max_requests = 100
 
