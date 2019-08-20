@@ -130,6 +130,7 @@ class Sequence(peewee.Model):
         for value, next_value in self.value_pairs():
             pass
         """
+        # TODO: add unit test here
         values = self.values
         if only_numeric:
             values = [value for value in self.values if value.value is not None]
@@ -144,6 +145,7 @@ class Sequence(peewee.Model):
     def closest_possible_value(self, value: Union[Decimal, float],  # noqa: C901
                                round_up=True) -> Union['Value', None]:
         """Returns the closest possible value in the sequence's values based on the given value."""
+        # TODO: add unit test here
         if isinstance(value, float):
             value = Decimal(value)
 
@@ -166,10 +168,9 @@ class Sequence(peewee.Model):
         diff_right = abs(right.value - value)
         if diff_left == diff_right:
             return left if not round_up else right
-        elif diff_left < diff_right:
+        if diff_left < diff_right:
             return left
-        else:
-            return right
+        return right
 
     def remove_values(self):
         """Removes the related values in an atomic way."""
