@@ -97,8 +97,9 @@ class Sequence(peewee.Model):
             logger.error('Did not found any numeric values')
             return self.values
 
-        root_value = next((nv for nv in numeric_values
-                           if nv.previous is None and nv.next is not None), None)
+        root_generator = (nv for nv in numeric_values
+                          if nv.previous is None and nv.next is not None)
+        root_value = next(root_generator, None)
         if root_value is None:
             logger.error(f'No root value, can not sort in {numeric_values}')
             return self.values
@@ -140,7 +141,8 @@ class Sequence(peewee.Model):
             yield value, value.next
             value = value.next
 
-    def closest_possible_value(self, value: Union[Decimal, float], round_up=True) -> Union['Value', None]:
+    def closest_possible_value(self, value: Union[Decimal, float],  # noqa: C901
+                               round_up=True) -> Union['Value', None]:
         """Returns the closest possible value in the sequence's values based on the given value."""
         if isinstance(value, float):
             value = Decimal(value)
@@ -154,7 +156,7 @@ class Sequence(peewee.Model):
                 left, right = val, next_val
 
         if left is None and right is None:
-            raise ValueError('Could not infer the closest value')
+            return None
         if left is not None and right is None:
             return left
         if left is None and right is not None:
