@@ -168,3 +168,56 @@ def test_value_from_list(save_mock, database_mock, value_list):
     assert values[-1].name == 'Coffee'
     assert values[-2].value is None
     assert values[-2].name == '?'
+
+
+def test_sequence_value_pairs_without_values(sequence_without_values: Sequence):
+    generator = sequence_without_values.value_pairs()
+    assert not list(generator)
+    assert None is next(generator, None)
+
+
+def test_sequence_value_pairs_with_valid_values(sequence_with_valid_linked_values: Sequence):
+    generator = sequence_with_valid_linked_values.value_pairs()
+    pair_values = list(generator)
+    assert pair_values
+
+    # test that we actually get pairs
+    for pair in pair_values:
+        assert pair
+        assert pair[0] != pair[1]
+
+    # the last element's right/last value is always None
+    assert pair_values[-1][0] is not None
+    assert pair_values[-1][1] is None
+
+
+def test_sequence_value_pairs_with_no_root_value(sequence_with_no_root_value: Sequence):
+    generator = sequence_with_no_root_value.value_pairs()
+    pair_values = list(generator)
+    assert not pair_values
+
+
+def test_sequence_closest_possible_value(sequence_with_valid_linked_values: Sequence):
+    # test 0
+    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('0'))
+    assert actual.value == Decimal('0.0')
+    
+    # test the closest value is one of them
+    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('1.0'))
+    assert actual.value == Decimal('1.0')
+    # test the closest value is one of them
+    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('2.0'))
+    assert actual.value == Decimal('2.0')
+
+    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('1.5'), round_up=False)
+    assert actual.value == Decimal('1.0')
+    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('1.5'), round_up=True)
+    assert actual.value == Decimal('2.0')
+    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('0.5'), round_up=False)
+    assert actual.value == Decimal('0.0')
+    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('0.5'), round_up=True)
+    assert actual.value == Decimal('1.0')
+
+    # test the closest value is the higher than the max value
+    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('10'))
+    assert actual.value == Decimal('2.0')

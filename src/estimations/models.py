@@ -121,7 +121,7 @@ class Sequence(peewee.Model):
         values.extend(non_numeric_values)
         return values
 
-    def value_pairs(self, only_numeric=True):
+    def value_pairs(self):
         """Yields the current value and the next value as a 2-value tuple.
 
         The first pair is (index0, index1) and last pair is (indexN, None).
@@ -130,13 +130,11 @@ class Sequence(peewee.Model):
         for value, next_value in self.value_pairs():
             pass
         """
-        # TODO: add unit test here
         values = self.values
-        if only_numeric:
-            values = [value for value in self.values if value.value is not None]
-
         if not values:
             return
+
+        # start with the root value
         value = next((value for value in values
                      if value.previous is None and value.next is not None), None)
         while value:
@@ -146,7 +144,6 @@ class Sequence(peewee.Model):
     def closest_possible_value(self, value: Union[Decimal, float],
                                round_up=True) -> Union['Value', None]:
         """Returns the closest possible value in the sequence's values based on the given value."""
-        # TODO: add unit test here
         if isinstance(value, float):
             value = Decimal(value)
 
@@ -167,9 +164,15 @@ class Sequence(peewee.Model):
         return right
 
     def _closest_adjacent_to(self, value) -> Tuple[Optional['Value'], Optional['Value']]:
-        for val, next_val in self.value_pairs(only_numeric=True):
+        for val, next_val in self.value_pairs():
             if next_val is None:
                 return None, val
+            if val.value is None and next_val.value is None:
+                continue
+            if val.value is not None and next_val.value is None and val.value <= value:
+                return val, None
+            if val.value is None and next_val.value is not None and value <= next_val.value:
+                return None, next_val
             if val.value <= value <= next_val.value:
                 return val, next_val
         return None, None
