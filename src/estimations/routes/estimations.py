@@ -5,6 +5,7 @@ from cerberus import Validator
 from flask import jsonify, make_response, request
 
 from estimations import schemas
+from users.exceptions import NotFound as UserNotFound
 from users.models import User
 
 from ..app import estimations_app
@@ -19,7 +20,8 @@ from ..models import (
 
 @estimations_app.errorhandler(EmptyIdentifier)
 @estimations_app.errorhandler(InvalidRequest)
-def handle_invalid_requests(error: Union[EmptyIdentifier, InvalidRequest]):
+@estimations_app.errorhandler(UserNotFound)
+def handle_invalid_requests(error: Union[EmptyIdentifier, InvalidRequest, UserNotFound]):
     return make_response(
         jsonify({
             'message': str(error),
