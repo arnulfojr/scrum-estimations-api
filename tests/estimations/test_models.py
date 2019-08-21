@@ -201,7 +201,7 @@ def test_sequence_closest_possible_value(sequence_with_valid_linked_values: Sequ
     # test 0
     actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('0'))
     assert actual.value == Decimal('0.0')
-    
+
     # test the closest value is one of them
     actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('1.0'))
     assert actual.value == Decimal('1.0')
@@ -209,13 +209,13 @@ def test_sequence_closest_possible_value(sequence_with_valid_linked_values: Sequ
     actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('2.0'))
     assert actual.value == Decimal('2.0')
 
-    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('1.5'), round_up=False)
+    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('1.5'), round_up=False)  # noqa: E501
     assert actual.value == Decimal('1.0')
-    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('1.5'), round_up=True)
+    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('1.5'), round_up=True)  # noqa: E501
     assert actual.value == Decimal('2.0')
-    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('0.5'), round_up=False)
+    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('0.5'), round_up=False)  # noqa: E501
     assert actual.value == Decimal('0.0')
-    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('0.5'), round_up=True)
+    actual = sequence_with_valid_linked_values.closest_possible_value(Decimal('0.5'), round_up=True)  # noqa: E501
     assert actual.value == Decimal('1.0')
 
     # test the closest value is the higher than the max value
