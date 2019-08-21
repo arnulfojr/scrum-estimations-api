@@ -17,7 +17,7 @@ import statistics
 from datetime import datetime
 from decimal import Decimal
 from itertools import chain, islice, tee
-from typing import Any, Iterator, List, Union
+from typing import Any, Iterator, List, Optional, Tuple, Union
 from uuid import UUID, uuid4
 
 import peewee
@@ -137,26 +137,20 @@ class Sequence(peewee.Model):
 
         if not values:
             return
-        value = values[0]
+        value = next((value for value in values
+                     if value.previous is None and value.next is not None), None)
         while value:
             yield value, value.next
             value = value.next
 
-    def closest_possible_value(self, value: Union[Decimal, float],  # noqa: C901
+    def closest_possible_value(self, value: Union[Decimal, float],
                                round_up=True) -> Union['Value', None]:
         """Returns the closest possible value in the sequence's values based on the given value."""
         # TODO: add unit test here
         if isinstance(value, float):
             value = Decimal(value)
 
-        left, right = None, None
-        for val, next_val in self.value_pairs(only_numeric=True):
-            if next_val is None:
-                left, right = None, val
-                break  # there should not be anymore items
-            if val.value <= value <= next_val.value:
-                left, right = val, next_val
-
+        left, right = self._closest_adjacent_to(value)
         if left is None and right is None:
             return None
         if left is not None and right is None:
@@ -171,6 +165,14 @@ class Sequence(peewee.Model):
         if diff_left < diff_right:
             return left
         return right
+
+    def _closest_adjacent_to(self, value) -> Tuple[Optional['Value'], Optional['Value']]:
+        for val, next_val in self.value_pairs(only_numeric=True):
+            if next_val is None:
+                return None, val
+            if val.value <= value <= next_val.value:
+                return val, next_val
+        return None, None
 
     def remove_values(self):
         """Removes the related values in an atomic way."""

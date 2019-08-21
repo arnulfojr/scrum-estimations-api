@@ -51,7 +51,9 @@ def run():
         tasks = create_two_tasks_in_session(session, client=http_client)
 
     print(f'Organization: {organization["id"]}')
-    [print(f'User: {user["id"]}') for user in users]
+    for user in users:
+        print(f'User: {user["id"]}')
+
     print(f'Sequence: {sequence["name"]}')
     for value in sequence['values']:
         print(f'  Value({value["id"]}): {value["value"]}')

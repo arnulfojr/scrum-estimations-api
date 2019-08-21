@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Tuple, Union
 
 from cerberus import Validator
 from flask import jsonify, make_response, request
@@ -7,6 +8,7 @@ from estimations import schemas
 from users.models import User
 
 from ..app import estimations_app
+from ..exc import EmptyIdentifier, InvalidRequest
 from ..models import (
     Estimation,
     Session,
@@ -15,21 +17,20 @@ from ..models import (
 )
 
 
+@estimations_app.errorhandler(EmptyIdentifier)
+@estimations_app.errorhandler(InvalidRequest)
+def handle_invalid_requests(error: Union[EmptyIdentifier, InvalidRequest]):
+    return make_response(
+        jsonify({
+            'message': str(error),
+        }),
+        error.status_code,
+    )
+
+
 @estimations_app.route('/sessions/<session_id>/tasks/<task_id>/estimations', methods=['GET'])
 def get_estimations(session_id: str, task_id: str):
-    if not session_id:
-        return make_response(jsonify({
-            'message': 'Please provide the session identifier.',
-        }), HTTPStatus.NOT_FOUND)
-
-    session = Session.lookup(session_id)
-
-    try:
-        task = Task.lookup(task_id, session=session)
-    except (TypeError, ValueError):
-        return make_response(jsonify({
-            'message': 'We could not infer the Task from the given input...',
-        }), HTTPStatus.BAD_REQUEST)
+    session, task = get_or_fail(session_id, task_id)
 
     payload = [estimation.dump(with_task=False) for estimation in task.estimations]
     return make_response(jsonify(payload), HTTPStatus.OK)
@@ -37,19 +38,7 @@ def get_estimations(session_id: str, task_id: str):
 
 @estimations_app.route('/sessions/<session_id>/tasks/<task_id>/estimations/', methods=['PUT'])
 def estimate(session_id: str, task_id: str):
-    if not session_id:
-        return make_response(jsonify({
-            'message': 'Please provide the session identifier.',
-        }), HTTPStatus.NOT_FOUND)
-
-    session = Session.lookup(session_id)
-
-    try:
-        task = Task.lookup(task_id, session=session)
-    except (TypeError, ValueError):
-        return make_response(jsonify({
-            'message': 'We could not infer the Task from the given input...',
-        }), HTTPStatus.BAD_REQUEST)
+    session, task = get_or_fail(session_id, task_id)
 
     payload = request.get_json()
 
@@ -88,19 +77,7 @@ def estimate(session_id: str, task_id: str):
 
 @estimations_app.route('/sessions/<session_id>/tasks/<task_id>/summary', methods=['GET'])
 def get_task_summary(session_id: str, task_id: str):
-    if not session_id:
-        return make_response(jsonify({
-            'message': 'Please provide the session identifier.',
-        }), HTTPStatus.NOT_FOUND)
-
-    session = Session.lookup(session_id)
-
-    try:
-        task = Task.lookup(task_id, session=session)
-    except (TypeError, ValueError):
-        return make_response(jsonify({
-            'message': 'We could not infer the Task from the given input...',
-        }), HTTPStatus.BAD_REQUEST)
+    session, task = get_or_fail(session_id, task_id)
 
     mean_estimation = task.mean_estimation
     everybody_estimated = task.is_estimated_by_all_members
@@ -117,3 +94,20 @@ def get_task_summary(session_id: str, task_id: str):
         'non_numeric_estimations': [estimation.dump(with_task=False)
                                     for estimation in task.non_numeric_estimations],
     }), HTTPStatus.OK)
+
+
+def get_or_fail(session_id: Union[str, None], task_id: Union[str, None]) -> Tuple[Session, Task]:
+    """Gets the session and task based on their identifiers."""
+    if not session_id:
+        raise EmptyIdentifier('Please provide a session identifier')
+    if not task_id:
+        raise EmptyIdentifier('Please provide a valid task identifier')
+
+    session = Session.lookup(session_id)
+
+    try:
+        task = Task.lookup(task_id, session=session)
+    except (TypeError, ValueError) as e:
+        raise InvalidRequest('We could not infer the Task from the given input...') from e
+    else:
+        return session, task
