@@ -85,6 +85,8 @@ def get_task_summary(session_id: str, task_id: str):
     everybody_estimated = task.is_estimated_by_all_members
     consensus_met = task.consensus_met
     closest_value = session.sequence.closest_possible_value(mean_estimation)
+    non_numeric_estimations = [estimation.dump(with_task=False)
+                               for estimation in task.non_numeric_estimations]
 
     return make_response(jsonify({
         'mean': float(mean_estimation),
@@ -93,8 +95,7 @@ def get_task_summary(session_id: str, task_id: str):
         'closest_value': closest_value.dump() if closest_value else 0,
         'task': task.dump(with_session=False, with_estimations=True),
         'has_non_numeric_estimations': task.has_non_numeric_estimations(),
-        'non_numeric_estimations': [estimation.dump(with_task=False)
-                                    for estimation in task.non_numeric_estimations],
+        'non_numeric_estimations': non_numeric_estimations,
     }), HTTPStatus.OK)
 
 
