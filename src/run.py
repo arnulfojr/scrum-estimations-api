@@ -1,4 +1,6 @@
 from flask import Flask
+from flask_cors import CORS
+from flasgger import Swagger
 
 from common import db
 from estimations.app import estimations_app  # noqa
@@ -19,6 +21,24 @@ def setup_database():
 def clean_up(exc):
     db.close()
 
+
+# - Add global plugins - #
+CORS(app)
+
+Swagger(app, config={
+    'headers': [],
+    'specs': [
+        {
+            'endpoint': 'v1',
+            'route': '/docs/api/v1.json',
+            'rule_filter': lambda rule: True,
+            'model_filter': lambda tag: True,
+        },
+    ],
+    'static_url_path': '/flasgger_static',
+    'swagger_ui': True,
+    'specs_route': '/docs/api/',
+})
 
 # - register Blueprints - #
 app.register_blueprint(health_app, url_prefix='/selfz')
