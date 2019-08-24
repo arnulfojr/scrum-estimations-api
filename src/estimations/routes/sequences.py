@@ -12,6 +12,21 @@ from ..models import Sequence, Value
 
 @estimations_app.route('/sequences', methods=['GET'])
 def get_all_sequences():
+    """Get all the sequences.
+    ---
+    tags:
+        - Sequences
+    definitions:
+        Sequences:
+            type: array
+            items:
+                $ref: '#/definitions/Sequence'
+    responses:
+        200:
+            description: all the sequences
+            schema:
+                $ref: '#/definitions/Sequences'
+    """
     sequences = Sequence.all()
     payload = [sequence.dump() for sequence in sequences]
     return make_response(jsonify(payload), HTTPStatus.OK)
@@ -19,6 +34,33 @@ def get_all_sequences():
 
 @estimations_app.route('/sequences/', methods=['POST'])
 def create_sequence():
+    """Create a sequence.
+    ---
+    tags:
+        - Sequences
+    parameters:
+        - in: body
+          name: body
+          schema:
+            name:
+                type: string
+    definitions:
+        SequenceWithoutValues:
+            type: object
+            properties:
+                name:
+                    type: string
+                    example: Fibonacci Sequence
+    responses:
+        201:
+            description: The sequence was created
+            schema:
+                $ref: '#/definitions/SequenceWithoutValues'
+        422:
+            description: A sequence already exists
+            schema:
+                $ref: '#/definitions/UnprocessableEntity'
+    """
     payload = request.get_json()
 
     validator = Validator()

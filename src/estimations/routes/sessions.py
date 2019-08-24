@@ -13,6 +13,55 @@ from ..models import Session, SessionMember, Task
 
 @estimations_app.route('/sessions/<code>', methods=['GET'])
 def get_session(code: str):
+    """Get the session.
+    ---
+    tags:
+        - Sessions
+    parameters:
+        - in: path
+          name: code
+          required: True
+          type: string
+          format: uuid
+    definitions:
+        Session:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                name:
+                    type: string
+                    example: Some Session name
+                completed:
+                    type: boolean
+                    description: 'If true the session is mark as completed and
+                    no further changes can be made to the session.'
+                sequence:
+                    $ref: '#/definitions/Sequence'
+                organization:
+                    $ref: '#/definitions/Organization'
+                members:
+                    type: array
+                    items:
+                        $ref: '#/definitions/SessionMembers'
+                tasks:
+                    type: array
+                    items:
+                        $ref: '#/definitions/TasksWithoutSesssion'
+                created_at:
+                    type: string
+                    format: datetime
+    responses:
+        200:
+            description: Session
+            schema:
+                $ref: '#/definitions/Session'
+        404:
+            description: The session was not found
+            schema:
+                $ref: '#/definitions/NotFound'
+    """
     if not code:
         return make_response(jsonify({
             'message': 'Please provide the session identifier.',
