@@ -12,10 +12,12 @@ Here is a short story of the models:
         and to match the closest estimation.
         The name (optionally) can be used to abstract away the numeric value.
 """
+import statistics
+
 from datetime import datetime
 from decimal import Decimal
 from itertools import chain, islice, tee
-from typing import Any, Iterator, List, Union
+from typing import Any, Iterator, List, Optional, Tuple, Union
 from uuid import UUID, uuid4
 
 import peewee
@@ -26,11 +28,15 @@ from organizations.models import Organization
 from users.models import User
 
 from .exc import ResourceAlreadyExists, SequenceNotFound, SessionNotFound
-from .exc import TaskNotFound, UserIsNotPartOfTheSession
+from .exc import TaskNotFound, UserIsNotPartOfTheSession, ValueNotFound
 
 
 class Sequence(peewee.Model):
-    """Sequence model."""
+    """Sequence model.
+
+    Receives the backref from:
+        * Value as values
+    """
 
     name = peewee.CharField(primary_key=True)
 
@@ -80,18 +86,20 @@ class Sequence(peewee.Model):
         return data
 
     @property
-    def sorted_values(self):
+    def sorted_values(self) -> List['Value']:
+        """Returns a sorted list of the values."""
         if not self.values:
             logger.error('No values found')
             return list()
 
-        numeric_values = list(filter(lambda v: v.value is not None, self.values))
+        numeric_values = [val for val in self.values if val.value is not None]
         if not numeric_values:
             logger.error('Did not found any numeric values')
             return self.values
 
-        root_value = next((nv for nv in numeric_values
-                           if nv.previous is None and nv.next is not None), None)
+        root_generator = (nv for nv in numeric_values
+                          if nv.previous is None and nv.next is not None)
+        root_value = next(root_generator, None)
         if root_value is None:
             logger.error(f'No root value, can not sort in {numeric_values}')
             return self.values
@@ -105,13 +113,69 @@ class Sequence(peewee.Model):
             else:
                 break
 
-        non_numeric_values = list(filter(lambda v: v.value is None, self.values))
+        non_numeric_values = [val for val in self.values if val.value is None]
         if non_numeric_values:
             # sort in place by name, fallback to value's ID
             non_numeric_values.sort(key=lambda v: v.name or str(v.id))
 
         values.extend(non_numeric_values)
         return values
+
+    def value_pairs(self):
+        """Yields the current value and the next value as a 2-value tuple.
+
+        The first pair is (index0, index1) and last pair is (indexN, None).
+        Example usage:
+
+        for value, next_value in self.value_pairs():
+            pass
+        """
+        values = self.values
+        if not values:
+            return
+
+        # start with the root value
+        value = next((value for value in values
+                     if value.previous is None and value.next is not None), None)
+        while value:
+            yield value, value.next
+            value = value.next
+
+    def closest_possible_value(self, value: Union[Decimal, float],
+                               round_up=True) -> Union['Value', None]:
+        """Returns the closest possible value in the sequence's values based on the given value."""
+        if isinstance(value, float):
+            value = Decimal(value)
+
+        left, right = self._closest_adjacent_to(value)
+        if left is None and right is None:
+            return None
+        if left is not None and right is None:
+            return left
+        if left is None and right is not None:
+            return right
+
+        diff_left = abs(left.value - value)
+        diff_right = abs(right.value - value)
+        if diff_left == diff_right:
+            return left if not round_up else right
+        if diff_left < diff_right:
+            return left
+        return right
+
+    def _closest_adjacent_to(self, value) -> Tuple[Optional['Value'], Optional['Value']]:
+        for val, next_val in self.value_pairs():
+            if next_val is None:
+                return None, val
+            if val.value is None and next_val.value is None:
+                continue
+            if val.value is not None and next_val.value is None and val.value <= value:
+                return val, None
+            if val.value is None and next_val.value is not None and value <= next_val.value:
+                return None, next_val
+            if val.value <= value <= next_val.value:
+                return val, next_val
+        return None, None
 
     def remove_values(self):
         """Removes the related values in an atomic way."""
@@ -142,7 +206,7 @@ class Value(peewee.Model):
 
     name = peewee.CharField(null=True)
 
-    value = peewee.DecimalField(null=True)
+    value: Decimal = peewee.DecimalField(null=True)
 
     created_at = peewee.TimestampField(default=datetime.now)
 
@@ -155,6 +219,16 @@ class Value(peewee.Model):
         database = database
 
         table_name = 'estimation_values'
+
+    @classmethod
+    def lookup(cls, identifier: str):
+        query = cls.select().where(cls.id == identifier)
+        try:
+            value = query.get()
+        except cls.DoesNotExist as e:
+            raise ValueNotFound(f'No value for {identifier} was found') from e
+        else:
+            return value
 
     @classmethod
     def from_list(cls, items: List[dict], sequence: Sequence) -> List['Value']:
@@ -175,10 +249,10 @@ class Value(peewee.Model):
                 value.save(force_insert=True)
                 values.append(value)
 
-        numeric_values = list(filter(lambda x: x.value is not None, values))
+        numeric_values = [v for v in values if v.value is not None]
         numeric_values.sort(key=lambda v: v.value)
 
-        non_numeric_values = list(filter(lambda x: x.value is None, values))
+        non_numeric_values = [v for v in values if v.value is None]
         non_numeric_values.sort(key=lambda v: v.name)
 
         for previous, current, nxt in previous_and_next(numeric_values):
@@ -220,7 +294,12 @@ def previous_and_next(some_iterable: Iterator[Any]):
 
 
 class Session(peewee.Model):
-    """Estimations Session."""
+    """Estimations Session.
+
+    Receives the backref from:
+        * SessionMember as session_members
+        * Task as tasks
+    """
 
     id = peewee.UUIDField(primary_key=True, default=uuid4)
 
@@ -271,7 +350,7 @@ class Session(peewee.Model):
                              sequence=sequence_model)
         return session
 
-    def dump(self, with_organization=True):
+    def dump(self, with_organization=True, with_tasks=True):
         data = {
             'id': str(self.id),
             'name': self.name,
@@ -290,7 +369,7 @@ class Session(peewee.Model):
         if self.session_members:
             data['members'] = [member.user.dump() for member in self.session_members]
 
-        if self.tasks:
+        if with_tasks and self.tasks:
             data['tasks'] = [task.dump(with_session=False) for task in self.tasks]
 
         return data
@@ -347,7 +426,12 @@ class SessionMember(peewee.Model):
 
 
 class Task(peewee.Model):
-    """Task model."""
+    """Task model.
+
+    Receives the backref:
+        * Estimation as estimations
+        * EstimationSummary as summaries
+    """
 
     id = peewee.UUIDField(primary_key=True, default=uuid4)
 
@@ -367,7 +451,6 @@ class Task(peewee.Model):
 
     @classmethod
     def lookup(cls, name_or_id: Union[UUID, str], session: Union[Session, None] = None):
-        query = None
         if isinstance(name_or_id, UUID):  # then for sure it is the Task ID
             query = cls.select().where(cls.id == name_or_id)
         else:
@@ -395,7 +478,51 @@ class Task(peewee.Model):
         else:
             return task
 
-    def dump(self, with_session=True, with_organization=False):
+    @property
+    def is_estimated_by_all_members(self) -> bool:
+        """Returns a boolean if everybody has estimated the task."""
+        users_who_estimated: List[User] = [estimation.user for estimation in self.estimations]
+        session_users: List[User] = [member.user for member in self.session.session_members]
+
+        return all((user in users_who_estimated) for user in session_users)
+
+    @property
+    def consensus_met(self) -> bool:
+        """Returns True if all the estimations are the same."""
+        values: List[Value] = [estimation.value for estimation in self.estimations]
+        try:
+            first_value: Value = values.pop()
+        except IndexError:
+            return False
+        return all((value == first_value) for value in values)
+
+    @property
+    def mean_estimation(self) -> Decimal:
+        """Return the mean for the numeric estimated values.
+
+        Returns a Decimal(0) if casting the mean failed.
+        """
+        values = (estimation.value for estimation in self.estimations)
+        numeric_values = (value.value for value in values
+                          if value.value is not None)
+        try:
+            average: Decimal = statistics.mean(numeric_values)
+        except (statistics.StatisticsError, TypeError):
+            return Decimal(0)
+        else:
+            return average
+
+    def has_non_numeric_estimations(self) -> bool:
+        """Returns True if an estimation has no numerical value."""
+        values = (estimation.value for estimation in self.estimations)
+        return any(value for value in values if value.value is None)
+
+    @property
+    def non_numeric_estimations(self) -> List['Estimation']:
+        """Returns the estimations that have no numerical value."""
+        return [estimation for estimation in self.estimations if estimation.value.value is None]
+
+    def dump(self, with_session=True, with_organization=False, with_estimations=False) -> dict:
         data = {
             'id': str(self.id),
             'name': self.name,
@@ -403,7 +530,12 @@ class Task(peewee.Model):
         }
 
         if with_session:
-            data['session'] = self.session.dump(with_organization=with_organization)
+            data['session'] = self.session.dump(with_tasks=True,
+                                                with_organization=with_organization)
+
+        if with_estimations:
+            data['estimations'] = [estimation.dump(with_task=False)
+                                   for estimation in self.estimations]
 
         return data
 
@@ -413,23 +545,47 @@ class Estimation(peewee.Model):
 
     id = peewee.UUIDField(primary_key=True, default=uuid4)
 
-    task = peewee.ForeignKeyField(Task, backref='estimations')
+    task = peewee.ForeignKeyField(Task, backref='estimations',
+                                  column_name='task',
+                                  on_delete='CASCADE')
 
-    user = peewee.ForeignKeyField(User, backref='estimations')
+    user = peewee.ForeignKeyField(User, backref='estimations',
+                                  column_name='user',
+                                  on_delete='SET NULL')
 
-    value = peewee.ForeignKeyField(Value, backref='estimations')
+    value = peewee.ForeignKeyField(Value, backref='estimations',
+                                   column_name='value',
+                                   on_delete='SET NULL')
 
     created_at = peewee.TimestampField(default=datetime.now)
 
     class Meta:
 
-        indexes = (
-            (('task', 'user'), False),
-        )
-
         database = database
 
         table_name = 'estimations'
+
+    @classmethod
+    def lookup(cls, task: Task, user: User) -> 'Estimation':
+        query = cls.select().where((cls.task == task) & (cls.user == user))
+        try:
+            estimation = query.get()
+        except cls.DoesNotExist:
+            return None
+        else:
+            return estimation
+
+    def dump(self, with_task=True):
+        data = {
+            'user': self.user.dump(with_organization=False),
+            'value': self.value.dump(),
+            'created_at': self.created_at.isoformat(),
+        }
+
+        if with_task:
+            data['task'] = self.task.dump(with_session=False)
+
+        return data
 
 
 class EstimationSummary(peewee.Model):

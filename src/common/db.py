@@ -9,7 +9,7 @@ database = PooledMySQLDatabase(db.DATABASE,
                                port=db.PORT,
                                user=db.USER,
                                password=db.PASSWORD,
-                               max_connections=2)
+                               max_connections=5)
 
 
 def connect(*args, **kwargs):
