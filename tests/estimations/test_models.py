@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from estimations.models import Sequence, Value
+from estimations.models.sequences import Sequence, Value
 
 
 def linked_valid_values():
@@ -149,7 +149,7 @@ def value_list():
     ]
 
 
-@mock.patch('estimations.models.database')
+@mock.patch('estimations.models.sequences.database')
 @mock.patch.object(Value, 'save')
 def test_value_from_list(save_mock, database_mock, value_list):
     values = Value.from_list(value_list, None)
