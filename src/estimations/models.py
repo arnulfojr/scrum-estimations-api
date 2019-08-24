@@ -586,21 +586,3 @@ class Estimation(peewee.Model):
             data['task'] = self.task.dump(with_session=False)
 
         return data
-
-
-class EstimationSummary(peewee.Model):
-    """Estimation summary."""
-
-    task = peewee.ForeignKeyField(Task, backref='summaries')
-
-    closet_value = peewee.ForeignKeyField(Value)
-
-    average = peewee.DecimalField()
-
-    consensus_met = peewee.BooleanField()
-
-    class Meta:
-
-        database = database
-
-        table_name = 'estimation_summaries'
