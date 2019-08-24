@@ -1,6 +1,6 @@
+from flasgger import Swagger
 from flask import Flask
 from flask_cors import CORS
-from flasgger import Swagger
 
 from common import db
 from estimations.app import estimations_app  # noqa
