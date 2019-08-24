@@ -79,8 +79,16 @@ _CREATE_ESTIMATION = """
 value:
     type: dict
     required: True
-    schema:
-        id:
+    oneof_schema:
+        - id:
+            type: string
+            required: True
+            empty: False
+        - value:
+            type: number
+            required: True
+            empty: False
+        - name:
             type: string
             required: True
             empty: False

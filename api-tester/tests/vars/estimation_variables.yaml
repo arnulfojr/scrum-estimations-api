@@ -1,0 +1,23 @@
+---
+
+name: Variables for the estimations life cycly
+description: All the variables here are used for creating organizations, users, sessions and tasks that will get estimated
+
+variables:
+  users_passwords: abc123
+  admin_role: ADMIN
+  user_role: USER
+  sequence_name: My Not So Cool Sequence
+  session_name: My Irrelevant Session
+  first_task_name: TASK-1234
+  second_task_name: TASK-2345
+  users:
+    - email: admin-estimating@example.com
+      name: Admin User
+      role: ADMIN
+    - email: non-admin-estimating@example.com
+      name: Normal User
+      role: USER
+  organization:
+    name: My Not-so-Testeable Organization
+

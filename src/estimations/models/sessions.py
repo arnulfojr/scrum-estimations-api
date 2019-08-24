@@ -94,10 +94,14 @@ class Session(peewee.Model):
             data['organization'] = self.organization.dump()
 
         if self.session_members:
-            data['members'] = [member.user.dump() for member in self.session_members]
+            members: List[User] = [member.user.dump() for member in self.session_members]
+            members.sort(key=lambda member: member.get('registered_on'))
+            data['members'] = members
 
         if with_tasks and self.tasks:
-            data['tasks'] = [task.dump(with_session=False) for task in self.tasks]
+            tasks = [task.dump(with_session=False) for task in self.tasks]
+            tasks.sort(key=lambda task: task.get('name', ''))
+            data['tasks'] = tasks
 
         return data
 
@@ -106,9 +110,11 @@ class SessionMember(peewee.Model):
     """The session members."""
 
     session = peewee.ForeignKeyField(Session, backref='session_members',
+                                     on_delete='CASCADE',
                                      column_name='session')
 
     user = peewee.ForeignKeyField(User, backref='session_user',
+                                  on_delete='CASCADE',
                                   column_name='user')
 
     class Meta:
@@ -261,8 +267,10 @@ class Task(peewee.Model):
                                                 with_organization=with_organization)
 
         if with_estimations:
-            data['estimations'] = [estimation.dump(with_task=False)
-                                   for estimation in self.estimations]
+            estimations: List[dict] = [estimation.dump(with_task=False)
+                                       for estimation in self.estimations]
+            estimations.sort(key=lambda estimation: estimation.get('created_at'))
+            data['estimations'] = estimations
 
         return data
 

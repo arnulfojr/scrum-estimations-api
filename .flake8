@@ -10,7 +10,7 @@ ignore =
     D107
 import-order-style = edited
 application-import-names = organizations,estimations,users,settings,health,common
-max-line-length = 100
+max-line-length = 120
 max-complexity = 8
 exclude =
     # No need to traverse our git directory

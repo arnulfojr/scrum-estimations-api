@@ -1,0 +1,631 @@
+---
+test_name: Testing the estimation's session life cycle
+
+includes:
+  - !include vars/common.yaml
+  - !include vars/estimation_variables.yaml
+
+stages:
+  - name: Create organization for estimations
+    request:
+      url: "http://{hostname:s}:5000/organizations/"
+      method: POST
+      json:
+        name: "{organization.name:s}"
+    response:
+      status_code: 201
+      body:
+        id: !anystr
+        name: "{organization.name:s}"
+      save:
+        body:
+          org_id: id
+          org_name: name
+
+  - name: Create user directly within organization as Admin
+    request:
+      url: "http://{hostname:s}:5000/users/"
+      method: POST
+      json:
+        email: "{users[0].email:s}"
+        name: "{users[0].name:s}"
+        password: "{users_passwords:s}"
+        role: "{users[0].role:s}"
+        organization: "{org_id:s}"
+    response:
+      status_code: 201
+      body:
+        id: !anystr
+        name: "{users[0].name:s}"
+        email: "{users[0].email:s}"
+        role: "{users[0].role:s}"
+        registered_on: !anystr
+        organization:
+          id: "{org_id:s}"
+          name: "{org_name:s}"
+      save:
+        body:
+          user_0_id: id
+
+  - name: Create the second user directly within organization as USER
+    delay_before: 1
+    request:
+      url: "http://{hostname:s}:5000/users/"
+      method: POST
+      json:
+        email: "{users[1].email:s}"
+        name: "{users[1].name:s}"
+        password: "{users_passwords:s}"
+        role: "{users[1].role:s}"
+        organization: "{org_id:s}"
+    response:
+      status_code: 201
+      body:
+        id: !anystr
+        name: "{users[1].name:s}"
+        email: "{users[1].email:s}"
+        role: "{users[1].role:s}"
+        registered_on: !anystr
+        organization:
+          id: "{org_id:s}"
+          name: "{org_name:s}"
+      save:
+        body:
+          user_1_id: id
+
+  - name: Create a valid sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/"
+      method: POST
+      json:
+        name: "{sequence_name}"
+    response:
+      status_code: 201
+      body:
+        name: "{sequence_name}"
+        created_at: !anystr
+
+  - name: Add values to sequence
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/{sequence_name:s}/values/"
+      method: POST
+      json:
+        - value: 0.0
+        - value: 0.5
+        - value: 1.0
+        - value: 2.0
+        - value: 3.0
+        - value: 5.0
+        - value: 8.0
+        - value: 13.0
+        - value: 20.0
+        - name: '?'
+        - name: Coffee
+        - name: Impossible
+    response:
+      status_code: 201
+      body: &sequence_values
+        - id: !anystr
+          value: 0.0
+        - id: !anystr
+          value: 0.5
+        - id: !anystr
+          value: 1.0
+        - id: !anystr
+          value: 2.0
+        - id: !anystr
+          value: 3.0
+        - id: !anystr
+          value: 5.0
+        - id: !anystr
+          value: 8.0
+        - id: !anystr
+          value: 13.0
+        - id: !anystr
+          value: 20.0
+        - id: !anystr
+          name: '?'
+        - id: !anystr
+          name: Coffee
+          value: null
+        - id: !anystr
+          name: Impossible
+          value: null
+
+  - name: Create a session
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/"
+      method: POST
+      json:
+        name: "{session_name}"
+        sequence:
+          name: "{sequence_name:s}"
+        organization:
+          id: "{org_id:s}"
+    response:
+      status_code: 201
+      body:
+        completed: False
+        created_at: !anystr
+        id: !anystr
+        name: "{session_name}"
+        organization:
+          id: "{org_id:s}"
+          name: "{org_name:s}"
+        sequence:
+          name: "{sequence_name:s}"
+          created_at: !anystr
+          values: *sequence_values
+      save:
+        body:
+          session_id: id
+
+  - name: Join User 0 as session member
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}/members/"
+      method: PUT
+      json:
+        user:
+          id: "{user_0_id:s}"
+    response:
+      status_code: 200
+      body:
+        session:
+          completed: False
+          created_at: !anystr
+          id: "{session_id:s}"
+          name: "{session_name:s}"
+          members:
+            - id: "{user_0_id:s}"
+              name: "{users[0].name:s}"
+              email: "{users[0].email:s}"
+              registered_on: !anystr
+              role: "{admin_role}"
+          sequence:
+            created_at: !anystr
+            name: "{sequence_name:s}"
+            values: *sequence_values
+          organization:
+            id: "{org_id:s}"
+            name: "{org_name:s}"
+            users: !anything
+        user:
+          id: "{user_0_id:s}"
+          name: "{users[0].name:s}"
+          email: "{users[0].email:s}"
+          registered_on: !anystr
+          role: !anystr
+
+  - name: Create a task for the session and check the session has it
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}/tasks/"
+      method: POST
+      json:
+        name: "{first_task_name:s}"
+    response:
+      status_code: 201
+      body:
+        id: !anystr
+        name: "{first_task_name:s}"
+        created_at: !anystr
+        session:
+          completed: False
+          created_at: !anystr
+          id: "{session_id:s}"
+          name: "{session_name:s}"
+          members:
+            - id: "{user_0_id:s}"
+              name: "{users[0].name:s}"
+              email: "{users[0].email:s}"
+              registered_on: !anystr
+              role: !anystr
+          sequence:
+            created_at: !anystr
+            name: "{sequence_name:s}"
+            values: *sequence_values
+          tasks:
+            - name: "{first_task_name}"
+              id: !anystr
+              created_at: !anystr
+      save:
+        body:
+          first_task_id: id
+
+  - name: User 0 will estimate the first Task
+    request:
+      url: "http://{hostname}:5000/estimations/sessions/{session_id}/tasks/{first_task_id}/estimations/"
+      method: PUT
+      json:
+        user:
+          id: "{user_0_id:s}"
+        value:
+          value: 2.0
+    response:
+      status_code: 201
+      body:
+        user:
+          id: "{user_0_id:s}"
+          name: "{users[0].name:s}"
+          email: "{users[0].email:s}"
+          registered_on: !anystr
+          role: "{users[0].role:s}"
+        value:
+          value: 2.0
+          id: !anystr
+        task:
+          id: "{first_task_id:s}"
+          name: "{first_task_name:s}"
+          created_at: !anystr
+        created_at: !anystr
+    delay_after: 1 # since the sorting is based on time we need to strictly wait
+
+  - name: Get the first task's summary
+    request:
+      url: "http://{hostname}:5000/estimations/sessions/{session_id}/tasks/{first_task_id}/summary"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        mean: 2.0
+        everybody_estimated: True
+        consensus_met: True
+        closest_value:
+          id: !anystr
+          value: 2.0
+        task:
+          id: "{first_task_id}"
+          name: "{first_task_name}"
+          created_at: !anystr
+          estimations:
+            - user:
+                id: "{user_0_id}"
+                name: "{users[0].name}"
+                email: "{users[0].email}"
+                registered_on: !anystr
+                role: "{users[0].role}"
+              value:
+                id: !anystr
+                value: 2.0
+              created_at: !anystr
+        has_non_numeric_estimations: False
+        non_numeric_estimations: [] # empty list
+
+  - name: User 1 joins the session
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}/members/"
+      method: PUT
+      json:
+        user:
+          id: "{user_1_id:s}"
+    response:
+      status_code: 200
+      body:
+        session:
+          completed: False
+          created_at: !anystr
+          id: "{session_id:s}"
+          name: "{session_name:s}"
+          members:
+            - id: "{user_0_id:s}"
+              name: "{users[0].name:s}"
+              email: "{users[0].email:s}"
+              registered_on: !anystr
+              role: "{users[0].role}"
+            - id: "{user_1_id:s}"
+              name: "{users[1].name:s}"
+              email: "{users[1].email:s}"
+              registered_on: !anystr
+              role: "{users[1].role}"
+          sequence:
+            created_at: !anystr
+            name: "{sequence_name:s}"
+            values: *sequence_values
+          organization:
+            id: "{org_id:s}"
+            name: "{org_name:s}"
+            users: !anything
+        user:
+          id: "{user_1_id:s}"
+          name: "{users[1].name:s}"
+          email: "{users[1].email:s}"
+          registered_on: !anystr
+          role: !anystr
+
+  - name: Get the first task's summary since User 1 hasn't estimated yet
+    request:
+      url: "http://{hostname}:5000/estimations/sessions/{session_id}/tasks/{first_task_id}/summary"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        mean: 2.0
+        everybody_estimated: False
+        consensus_met: False
+        closest_value:
+          id: !anystr
+          value: 2.0
+        task:
+          id: "{first_task_id}"
+          name: "{first_task_name}"
+          created_at: !anystr
+          estimations:
+            - user:
+                id: "{user_0_id}"
+                name: "{users[0].name}"
+                email: "{users[0].email}"
+                registered_on: !anystr
+                role: "{users[0].role}"
+              value:
+                id: !anystr
+                value: 2.0
+              created_at: !anystr
+        has_non_numeric_estimations: False
+        non_numeric_estimations: [] # empty list
+
+  - name: User 1 estimates the first Task
+    request:
+      url: "http://{hostname}:5000/estimations/sessions/{session_id}/tasks/{first_task_id}/estimations/"
+      method: PUT
+      json:
+        user:
+          id: "{user_1_id}"
+        value:
+          value: 3.0
+    response:
+      status_code: 201
+      body:
+        user:
+          id: "{user_1_id}"
+          name: "{users[1].name}"
+          email: "{users[1].email}"
+          registered_on: !anystr
+          role: "{users[1].role}"
+        value:
+          value: 3.0
+          id: !anystr
+        task:
+          id: "{first_task_id}"
+          name: "{first_task_name}"
+          created_at: !anystr
+        created_at: !anystr
+
+  - name: Get the first task's summary since User 1 has estimated already
+    request:
+      url: "http://{hostname}:5000/estimations/sessions/{session_id}/tasks/{first_task_id}/summary"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        mean: 2.5
+        everybody_estimated: True
+        consensus_met: False
+        closest_value:
+          id: !anystr
+          value: 3.0
+        task:
+          id: "{first_task_id}"
+          name: "{first_task_name}"
+          created_at: !anystr
+          estimations:
+            - user:
+                id: "{user_0_id}"
+                name: "{users[0].name}"
+                email: "{users[0].email}"
+                registered_on: !anystr
+                role: "{users[0].role}"
+              value:
+                id: !anystr
+                value: 2.0
+              created_at: !anystr
+            - user:
+                id: "{user_1_id}"
+                name: "{users[1].name}"
+                email: "{users[1].email}"
+                registered_on: !anystr
+                role: "{users[1].role}"
+              value:
+                id: !anystr
+                value: 3.0
+              created_at: !anystr
+        has_non_numeric_estimations: False
+        non_numeric_estimations: [] # empty list
+
+  - name: Create the second task for the session and check the session has it
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}/tasks/"
+      method: POST
+      json:
+        name: "{second_task_name}"
+    response:
+      status_code: 201
+      body:
+        id: !anystr
+        name: "{second_task_name}"
+        created_at: !anystr
+        session:
+          completed: False
+          created_at: !anystr
+          id: "{session_id:s}"
+          name: "{session_name:s}"
+          members:
+            - id: "{user_0_id:s}"
+              name: "{users[0].name:s}"
+              email: "{users[0].email:s}"
+              registered_on: !anystr
+              role: "{users[0].role}"
+            - id: "{user_1_id:s}"
+              name: "{users[1].name:s}"
+              email: "{users[1].email:s}"
+              registered_on: !anystr
+              role: "{users[1].role}"
+          sequence:
+            created_at: !anystr
+            name: "{sequence_name:s}"
+            values: *sequence_values
+          tasks:
+            - name: "{first_task_name}"
+              id: "{first_task_id}"
+              created_at: !anystr
+            - name: "{second_task_name}"
+              id: !anystr
+              created_at: !anystr
+      save:
+        body:
+          second_task_id: id
+
+  - name: User 0 will estimate the second Task
+    request:
+      url: "http://{hostname}:5000/estimations/sessions/{session_id}/tasks/{second_task_id:s}/estimations/"
+      method: PUT
+      json:
+        user:
+          id: "{user_0_id:s}"
+        value:
+          value: 5.0
+    response:
+      status_code: 201
+      body:
+        user:
+          id: "{user_0_id:s}"
+          name: "{users[0].name:s}"
+          email: "{users[0].email:s}"
+          registered_on: !anystr
+          role: "{users[0].role:s}"
+        value:
+          value: 5.0
+          id: !anystr
+        task:
+          id: "{second_task_id:s}"
+          name: "{second_task_name:s}"
+          created_at: !anystr
+        created_at: !anystr
+    delay_after: 1 # since the sorting is based on time we need to strictly wait
+
+  - name: User 1 will estimate the second Task with a non-numeric value
+    request:
+      url: "http://{hostname}:5000/estimations/sessions/{session_id}/tasks/{second_task_id:s}/estimations/"
+      method: PUT
+      json:
+        user:
+          id: "{user_1_id:s}"
+        value:
+          name: '?'
+    response:
+      status_code: 201
+      body:
+        user:
+          id: "{user_1_id:s}"
+          name: "{users[1].name:s}"
+          email: "{users[1].email:s}"
+          registered_on: !anystr
+          role: "{users[1].role:s}"
+        value:
+          id: !anystr
+          name: '?'
+        task:
+          id: "{second_task_id:s}"
+          name: "{second_task_name:s}"
+          created_at: !anystr
+        created_at: !anystr
+    delay_after: 1 # since the sorting is based on time we need to strictly wait
+
+  - name: Get the seconds task's summary
+    request:
+      url: "http://{hostname}:5000/estimations/sessions/{session_id}/tasks/{second_task_id:s}/summary"
+      method: GET
+    response:
+      status_code: 200
+      body:
+        mean: 5.0
+        everybody_estimated: True
+        consensus_met: False
+        closest_value:
+          id: !anystr
+          value: 5.0
+        task:
+          id: "{second_task_id:s}"
+          name: "{second_task_name}"
+          created_at: !anystr
+          estimations:
+            - user:
+                id: "{user_0_id}"
+                name: "{users[0].name}"
+                email: "{users[0].email}"
+                registered_on: !anystr
+                role: "{users[0].role}"
+              value:
+                id: !anystr
+                value: 5.0
+              created_at: !anystr
+            - user:
+                id: "{user_1_id}"
+                name: "{users[1].name}"
+                email: "{users[1].email}"
+                registered_on: !anystr
+                role: "{users[1].role}"
+              value:
+                id: !anystr
+                name: '?'
+              created_at: !anystr
+        has_non_numeric_estimations: True
+        non_numeric_estimations:
+          - user:
+              id: "{user_1_id}"
+              name: "{users[1].name}"
+              email: "{users[1].email}"
+              registered_on: !anystr
+              role: "{users[1].role}"
+            value:
+              id: !anystr
+              name: '?'
+            created_at: !anystr
+
+  # now we clean up
+  - name: Remove the member from session
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}/members/{user_0_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Remove user from organization from the organization's DELETE endpoint
+    request:
+      url: "http://{hostname:s}:5000/organizations/{org_id:s}/users/{user_0_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Delete the User 0
+    request:
+      url: "http://{hostname:s}:5000/users/{user_0_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Delete the User 1
+    request:
+      url: "http://{hostname:s}:5000/users/{user_1_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Delete the organization must delete the session
+    request:
+      url: "http://{hostname:s}:5000/organizations/{org_id:s}"
+      method: DELETE
+    response:
+      status_code: 204
+
+  - name: Getting session must fail with 404
+    request:
+      url: "http://{hostname:s}:5000/estimations/sessions/{session_id:s}"
+      method: GET
+    response:
+      status_code: 404
+
+  - name: Delete the sequence must be ok
+    request:
+      url: "http://{hostname:s}:5000/estimations/sequences/{sequence_name:s}"
+      method: DELETE
+    response:
+      status_code: 204

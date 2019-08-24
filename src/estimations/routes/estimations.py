@@ -5,29 +5,17 @@ from cerberus import Validator
 from flask import jsonify, make_response, request
 
 from estimations import schemas
-from users.exceptions import NotFound as UserNotFound
 from users.models import User
 
 from ..app import estimations_app
-from ..exc import EmptyIdentifier, InvalidRequest
+from ..exc import EmptyIdentifier, InvalidRequest, ValueNotFound
 from ..models import (
     Estimation,
+    Sequence,
     Session,
     Task,
     Value,
 )
-
-
-@estimations_app.errorhandler(EmptyIdentifier)
-@estimations_app.errorhandler(InvalidRequest)
-@estimations_app.errorhandler(UserNotFound)
-def handle_invalid_requests(error: Union[EmptyIdentifier, InvalidRequest, UserNotFound]):
-    return make_response(
-        jsonify({
-            'message': str(error),
-        }),
-        error.status_code,
-    )
 
 
 @estimations_app.route('/sessions/<session_id>/tasks/<task_id>/estimations', methods=['GET'])
@@ -57,8 +45,19 @@ def estimate(session_id: str, task_id: str):
             'message': f'This user({user_id}) seems to not be part of the organization\'s session',
         }), HTTPStatus.UNAUTHORIZED)
 
-    value_id = payload['value']['id']
-    value = Value.lookup(value_id)
+    value_payload = payload['value']
+    sequence: Sequence = session.sequence
+    if 'id' in value_payload:
+        value = Value.lookup(value_payload['id'])
+    elif 'name' in value_payload:
+        value = sequence.get_value_for_value_name(value_payload['name'])
+    elif 'value' in value_payload:
+        value = sequence.get_value_for_numeric_value(value_payload['value'])
+    else:
+        value = None
+
+    if not value:
+        raise ValueNotFound('The Value given did not contain a value from the sequence')
 
     # did the user already estimated?
     estimation = Estimation.lookup(task, user)
@@ -83,7 +82,7 @@ def get_task_summary(session_id: str, task_id: str):
 
     mean_estimation = task.mean_estimation
     everybody_estimated = task.is_estimated_by_all_members
-    consensus_met = task.consensus_met
+    consensus_met = task.consensus_met and everybody_estimated
     closest_value = session.sequence.closest_possible_value(mean_estimation)
     non_numeric_estimations = [estimation.dump(with_task=False)
                                for estimation in task.non_numeric_estimations]

@@ -166,6 +166,35 @@ class Sequence(peewee.Model):
 
         return None, None
 
+    def get_value_for_numeric_value(self, numeric_value: Union[Decimal, float]) -> Optional['Value']:
+        if isinstance(numeric_value, float):
+            numeric_value = Decimal(numeric_value)
+
+        # since we do not care about order we will simply remove them all
+        numeric_values = [value for value in self.values if value.value is not None]
+        for value in numeric_values:
+            if value.value == numeric_value:
+                return value
+
+        return None
+
+    def get_value_for_value_name(self, name: str, exact_match=True) -> Optional['Value']:
+        if not name:
+            return None
+
+        # here we actually do not care about the order as well so remove the ones
+        # that do not have a name related
+        non_numeric_values = [value for value in self.values if value.name is not None]
+        for value in non_numeric_values:
+            if exact_match:
+                if value.name == name:
+                    return value
+            else:
+                if name in value.name:
+                    return value
+
+        return None
+
     def remove_values(self):
         """Removes the related values in an atomic way."""
         values = self.sorted_values
@@ -229,7 +258,8 @@ class Value(peewee.Model):
                 try:
                     normalized_value = Decimal(val)
                 except TypeError:
-                    logger.error(f'Value({val}) was not Decimal and will use None')
+                    log_call = logger.error if val is not None else logger.warn
+                    log_call(f'Value({val}) was not Decimal and will use None')
                     normalized_value = None
 
                 value = cls(name=item.get('name'),

@@ -37,9 +37,7 @@ unit-tests:
 .PHONY: unit-tests
 
 run:
-	@docker-compose -f docker-compose.yml \
-		-f docker/docker-compose.local.yml \
-		up
+	@./docker/boot-local.sh
 .PHONY: run
 
 restart:
