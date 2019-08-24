@@ -2,7 +2,7 @@ import statistics
 
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Union
+from typing import List, Optional, Union
 from uuid import UUID, uuid4
 
 import peewee
@@ -293,7 +293,7 @@ class Estimation(peewee.Model):
         table_name = 'estimations'
 
     @classmethod
-    def lookup(cls, task: Task, user: User) -> 'Estimation':
+    def lookup(cls, task: Task, user: User) -> Optional['Estimation']:
         query = cls.select().where((cls.task == task) & (cls.user == user))
         try:
             estimation = query.get()

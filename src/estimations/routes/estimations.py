@@ -62,7 +62,7 @@ def estimate(session_id: str, task_id: str):
 
     # did the user already estimated?
     estimation = Estimation.lookup(task, user)
-    if estimation is None:
+    if not estimation:
         estimation = Estimation(value=value, user=user, task=task)
         estimation.save(force_insert=True)
         http_status_code = HTTPStatus.CREATED
