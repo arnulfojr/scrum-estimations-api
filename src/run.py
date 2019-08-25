@@ -48,7 +48,7 @@ Swagger(app, config={
         "contact": {
             "email": "arnulfojr94@gmail.com",
         },
-        "version": "0.0.1"
+        "version": "0.0.1",
     },
     "schemes": [
         "http",
