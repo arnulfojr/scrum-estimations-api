@@ -15,6 +15,7 @@ from ..models import Session, SessionMember, Task
 def get_session(code: str):
     """Get the session.
     ---
+    description: A session in which organizations estimate a series of tasks.
     tags:
         - Sessions
     parameters:
@@ -48,7 +49,31 @@ def get_session(code: str):
                 tasks:
                     type: array
                     items:
-                        $ref: '#/definitions/TasksWithoutSesssion'
+                        $ref: '#/definitions/TaskWithoutSession'
+                created_at:
+                    type: string
+                    format: datetime
+        SessionWithoutTasks:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                name:
+                    type: string
+                    example: Some Session name
+                completed:
+                    type: boolean
+                    description: 'If true the session is mark as completed and
+                    no further changes can be made to the session.'
+                sequence:
+                    $ref: '#/definitions/Sequence'
+                organization:
+                    $ref: '#/definitions/Organization'
+                members:
+                    type: array
+                    items:
+                        $ref: '#/definitions/SessionMembers'
                 created_at:
                     type: string
                     format: datetime
@@ -74,6 +99,40 @@ def get_session(code: str):
 
 @estimations_app.route('/sessions/', methods=['POST'])
 def create_session():
+    """Create a session.
+    ---
+    tags:
+        - Sessions
+    parameters:
+        - in: body
+          name: body
+          required: True
+          schema:
+            type: object
+            properties:
+                name:
+                    type: string
+                organization:
+                    type: object
+                    properties:
+                        id:
+                            type: string
+                            format: uuid
+                sequence:
+                    type: object
+                    properties:
+                        name:
+                            type: string
+    responses:
+        201:
+            description: Session was created
+            schema:
+                $ref: '#/definitions/Session'
+        400:
+            description: Invalid request
+            schema:
+                $ref: '#/definitions/ValidationErrors'
+    """
     payload = request.get_json()
 
     validator = Validator()
@@ -90,6 +149,29 @@ def create_session():
 
 @estimations_app.route('/sessions/<session_id>/members', methods=['GET'])
 def get_session_members(session_id: str):
+    """Get the session members.
+    ---
+    tags:
+        - Sessions
+    parameters:
+        - in: path
+          name: session_id
+          type: string
+          format: uuid
+          required: True
+    definitions:
+        SessionMembers:
+            type: array
+            items:
+                $ref: '#/definitions/SessionMember'
+        SessionMember:
+            $ref: '#/definitions/UserWithoutOrganization'
+    responses:
+        200:
+            description: Members
+            schema:
+                $ref: '#/definitions/SessionMembers'
+    """
     if not session_id:
         return make_response(jsonify({
             'message': 'Please provide the session identifier.',
@@ -108,6 +190,61 @@ def get_session_members(session_id: str):
 
 @estimations_app.route('/sessions/<session_id>/members/', methods=['PUT'])
 def join_session(session_id: str):
+    """Join a session.
+    ---
+    description: 'Adds the user to the session as long as the user is member of same organization.'
+    tags:
+        - Sessions
+    parameters:
+        - in: path
+          name: session_id
+          type: string
+          format: uuid
+          required: True
+        - in: body
+          name: body
+          required: True
+          schema:
+            type: object
+            properties:
+                user:
+                    type: object
+                    properties:
+                        id:
+                            type: string
+                            format: uuid
+    definitions:
+        Member:
+            type: object
+            properties:
+                session:
+                    $ref: '#/definitions/Session'
+                user:
+                    $ref: '#/definitions/UserWithoutOrganization'
+        Unauthorized:
+            type: object
+            properties:
+                message:
+                    type: string
+                    example: You are not authorized to get, modified, create this resource.
+    responses:
+        200:
+            description: User joined the session
+            schema:
+                $ref: '#/definitions/Member'
+        400:
+            description: Invalid request
+            schema:
+                $ref: '#/definitions/ValidationErrors'
+        403:
+            description: Unauthorized to join the session
+            schema:
+                $ref: '#/definitions/Unauthorized'
+        422:
+            description: User already joined the session
+            schema:
+                $ref: '#/definitions/UnprocessableEntity'
+    """
     if not session_id:
         return make_response(jsonify({
             'message': 'Please provide the session identifier.',
@@ -146,6 +283,29 @@ def join_session(session_id: str):
 
 @estimations_app.route('/sessions/<session_id>/members/<user_id>', methods=['DELETE'])
 def leave_session(session_id: str, user_id: str):
+    """Leave the session.
+    ---
+    tags:
+        - Sessions
+    parameters:
+        - in: path
+          name: session_id
+          type: string
+          format: uuid
+          required: True
+        - in: path
+          name: user_id
+          type: string
+          format: uuid
+          required: True
+    responses:
+        204:
+            description: User was removed from the session.
+        404:
+            description: The specified user or session were not found
+            schema:
+                $ref: '#/definitions/NotFound'
+    """
     if not session_id:
         return make_response(jsonify({
             'message': 'Please provide the session identifier.',
@@ -162,6 +322,46 @@ def leave_session(session_id: str, user_id: str):
 
 @estimations_app.route('/sessions/<session_id>/tasks', methods=['GET'])
 def get_session_tasks(session_id: str):
+    """Get the session's tasks.
+    ---
+    tags:
+        - Sessions
+        - Tasks
+    parameters:
+        - in: path
+          name: session_id
+          type: string
+          format: uuid
+          required: True
+    definitions:
+        TasksWithoutSession:
+            type: array
+            items:
+                $ref: '#/definitions/TaskWithoutSession'
+        TaskWithoutSession:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                name:
+                    type: string
+                    example: TASK-123
+                created_at:
+                    type: string
+                    format: datetime
+                estimations:
+                    $ref: '#/definitions/EstimationsWithoutTask'
+    responses:
+        200:
+            description: Session's tasks
+            schema:
+                $ref: '#/definitions/TasksWithoutSession'
+        404:
+            description: Session not found
+            schema:
+                $ref: '#/definitions/NotFound'
+    """
     if not session_id:
         return make_response(jsonify({
             'message': 'Please provide the session identifier.',
@@ -177,6 +377,66 @@ def get_session_tasks(session_id: str):
 
 @estimations_app.route('/sessions/<session_id>/tasks/<task>', methods=['GET'])
 def get_task_from_session(session_id: str, task: str):
+    """Get a task from the session.
+    ---
+    tags:
+        - Sessions
+        - Tasks
+    parameters:
+        - in: path
+          name: session_id
+          type: string
+          format: uuid
+          required: True
+        - in: path
+          name: task
+          type: string
+          required: True
+    definitions:
+        EstimationWithoutTask:
+            type: object
+            properties:
+                value:
+                    $ref: '#/definitions/Value'
+                user:
+                    $ref: '#/definitions/UserWithoutOrganization'
+                created_at:
+                    type: string
+                    format: datetime
+        EstimationsWithoutTask:
+            type: array
+            items:
+                $ref: '#/definitions/EstimationWithoutTask'
+        Task:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                name:
+                    type: string
+                    example: TASK-123
+                created_at:
+                    type: string
+                    format: datetime
+                session:
+                    $ref: '#/definitions/SessionWithoutTasks'
+                estimations:
+                    $ref: '#/definitions/EstimationsWithoutTask'
+    responses:
+        200:
+            description: The task
+            schema:
+                $ref: '#/definitions/Task'
+        400:
+            description: The task requested was not found
+            schema:
+                $ref: '#/definitions/NotFound'
+        404:
+            description: Session not found
+            schema:
+                $ref: '#/definitions/NotFound'
+    """
     if not session_id:
         return make_response(jsonify({
             'message': 'Please provide the session identifier.',
@@ -196,6 +456,40 @@ def get_task_from_session(session_id: str, task: str):
 
 @estimations_app.route('/sessions/<session_id>/tasks/', methods=['POST'])
 def add_task_to_session(session_id: str):
+    """Create a task in the session.
+    ---
+    tags:
+        - Tasks
+        - Sessions
+    parameters:
+        - in: path
+          name: session_id
+          type: string
+          format: uuid
+          required: True
+        - in: body
+          name: body
+          required: True
+          schema:
+            type: object
+            properties:
+                name:
+                    type: string
+                    example: TASK-123
+    responses:
+        201:
+            description: The task
+            schema:
+                $ref: '#/definitions/Task'
+        400:
+            description: The task requested was not found
+            schema:
+                $ref: '#/definitions/ValidationErrors'
+        404:
+            description: Session not found
+            schema:
+                $ref: '#/definitions/NotFound'
+    """
     if not session_id:
         return make_response(jsonify({
             'message': 'Please provide the session identifier.',
@@ -217,6 +511,43 @@ def add_task_to_session(session_id: str):
 
 @estimations_app.route('/sessions/<session_id>/tasks/<task>', methods=['PATCH'])
 def edit_task_from_session(session_id: str, task: str):
+    """Edit the task.
+    ---
+    tags:
+        - Tasks
+        - Sessions
+    parameters:
+        - in: path
+          name: session_id
+          format: uuid
+          type: string
+          required: True
+        - in: path
+          name: task
+          required: True
+          type: string
+        - in: body
+          name: body
+          schema:
+            type: object
+            properties:
+                name:
+                    type: string
+                    example: TASK-123
+    responses:
+        200:
+            description: Task was updated
+            schema:
+                $ref: '#/definitions/Task'
+        400:
+            description: Input errors
+            schema:
+                $ref: '#/definitions/ValidationErrors'
+        422:
+            description: The task identifier is not valid
+            schema:
+                $ref: '#/definitions/UnprocessableEntity'
+    """
     if not session_id:
         return make_response(jsonify({
             'message': 'Please provide the session identifier.',
@@ -236,9 +567,9 @@ def edit_task_from_session(session_id: str, task: str):
     except (TypeError, ValueError):
         return make_response(jsonify({
             'message': 'We could not infer the Task from the given input...',
-        }), HTTPStatus.BAD_REQUEST)
+        }), HTTPStatus.UNPROCESSABLE_ENTITY)
 
     task.name = payload['name']
     task.save()
 
-    return make_response(jsonify(task.dump()), HTTPStatus.CREATED)
+    return make_response(jsonify(task.dump()), HTTPStatus.OK)

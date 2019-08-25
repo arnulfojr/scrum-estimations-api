@@ -1,3 +1,5 @@
+import os
+
 from flasgger import Swagger
 from flask import Flask
 from flask_cors import CORS
@@ -36,8 +38,22 @@ Swagger(app, config={
         },
     ],
     'static_url_path': '/flasgger_static',
-    'swagger_ui': True,
+    'swagger_ui': bool(os.getenv('SWAGGER_UI', False)),
     'specs_route': '/docs/api/',
+}, template={
+    'swagger': '2.0',
+    "info": {
+        "title": "Estimations API",
+        "description": "API documentation for the Estimations API.",
+        "contact": {
+            "email": "arnulfojr94@gmail.com",
+        },
+        "version": "0.0.1"
+    },
+    "schemes": [
+        "http",
+        "https",
+    ],
 })
 
 # - register Blueprints - #

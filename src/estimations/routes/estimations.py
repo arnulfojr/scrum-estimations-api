@@ -20,6 +20,48 @@ from ..models import (
 
 @estimations_app.route('/sessions/<session_id>/tasks/<task_id>/estimations', methods=['GET'])
 def get_estimations(session_id: str, task_id: str):
+    """Get the tasks' estimations.
+    ---
+    tags:
+        - Tasks
+        - Estimations
+    parameters:
+        - in: path
+          name: session_id
+          type: string
+          format: uuid
+          required: True
+        - in: path
+          name: task_id
+          type: string
+          required: True
+    definitions:
+        Estimations:
+            type: array
+            items:
+                $ref: '#/definitions/Estimation'
+        Estimation:
+            type: object
+            properties:
+                value:
+                    $ref: '#/definitions/Value'
+                task:
+                    $ref: '#/definitions/TaskWithoutSession'
+                user:
+                    $ref: '#/definitions/UserWithoutOrganization'
+                created_at:
+                    type: string
+                    format: datetime
+    responses:
+        200:
+            description: Task estimations
+            schema:
+                $ref: '#/definitions/Estimations'
+        404:
+            description: The session or task were not found
+            schema:
+                $ref: '#/definitions/NotFound'
+    """
     session, task = get_or_fail(session_id, task_id)
 
     payload = [estimation.dump(with_task=False) for estimation in task.estimations]
@@ -28,6 +70,69 @@ def get_estimations(session_id: str, task_id: str):
 
 @estimations_app.route('/sessions/<session_id>/tasks/<task_id>/estimations/', methods=['PUT'])
 def estimate(session_id: str, task_id: str):
+    """Estimate a task.
+    ---
+    tags:
+        - Estimations
+        - Tasks
+    parameters:
+        - in: path
+          name: session_id
+          type: string
+          format: uuid
+          required: True
+        - in: path
+          name: task_id
+          type: string
+          required: True
+        - in: body
+          name: body
+          required: True
+          schema:
+            type: object
+            properties:
+                value:
+                    type: object
+                    description: 'Only one of the attributes is required.
+                    If all given the first priority is the id, then the value and the name at the end.'
+                    properties:
+                        id:
+                            type: string
+                            format: uuid
+                            description: Provide only one of these
+                        name:
+                            type: string
+                            example: Coffee Break
+                            description: Provide only one of these
+                        value:
+                            type: number
+                            format: float
+                            example: 2.0
+                            description: Provide only one of these
+                user:
+                    type: object
+                    properties:
+                        id:
+                            type: string
+                            format: uuid
+    responses:
+        200:
+            description: The estimation was updated
+            schema:
+                $ref: '#/definitions/Estimation'
+        201:
+            description: The estimation was created
+            schema:
+                $ref: '#/definitions/Estimation'
+        400:
+            description: Bad request input
+            schema:
+                $ref: '#/definitions/ValidationErrors'
+        404:
+            description: The session or task were not found
+            schema:
+                $ref: '#/definitions/NotFound'
+    """
     session, task = get_or_fail(session_id, task_id)
 
     payload = request.get_json()
@@ -49,10 +154,10 @@ def estimate(session_id: str, task_id: str):
     sequence: Sequence = session.sequence
     if 'id' in value_payload:
         value = Value.lookup(value_payload['id'])
-    elif 'name' in value_payload:
-        value = sequence.get_value_for_value_name(value_payload['name'])
     elif 'value' in value_payload:
         value = sequence.get_value_for_numeric_value(value_payload['value'])
+    elif 'name' in value_payload:
+        value = sequence.get_value_for_value_name(value_payload['name'])
     else:
         value = None
 
@@ -78,6 +183,57 @@ def estimate(session_id: str, task_id: str):
 
 @estimations_app.route('/sessions/<session_id>/tasks/<task_id>/summary', methods=['GET'])
 def get_task_summary(session_id: str, task_id: str):
+    """Get the summary of the task.
+    ---
+    tags:
+        - Tasks
+        - Estimations
+    parameters:
+        - in: path
+          name: session_id
+          type: string
+          format: uuid
+          required: True
+        - in: path
+          name: task_id
+          type: string
+          required: True
+    definitions:
+        RuntimeSummary:
+            type: object
+            properties:
+                mean:
+                    type: number
+                    format: float
+                    example: 2.5
+                    description: The task's mean
+                everybody_estimated:
+                    type: boolean
+                    description: true if all the session members had estimated
+                consensus_met:
+                    type: boolean
+                    description: If everybody voted for the same value
+                closest_value:
+                    $ref: '#/definitions/Value'
+                task:
+                    $ref: '#/definitions/TaskWithoutSession'
+                has_non_numeric_estimations:
+                    type: boolean
+                    description: If somebody voted for a value that does not have a numeric representation
+                non_numeric_estimations:
+                    type: array
+                    items:
+                        $ref: '#/definitions/Estimation'
+    responses:
+        200:
+            description: Get the task's summary
+            schema:
+                $ref: '#/definitions/RuntimeSummary'
+        404:
+            description: Task or session were not found
+            schema:
+                $ref: '#/definitions/NotFound'
+    """
     session, task = get_or_fail(session_id, task_id)
 
     mean_estimation = task.mean_estimation
