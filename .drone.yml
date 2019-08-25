@@ -1,0 +1,32 @@
+kind: pipeline
+name: default
+
+steps:
+  - name: Lint
+    image: python:3.7-alpine
+    commands:
+      - apk add --no-cache make
+      - make lint
+
+  - name: Unit test
+    image: docker:dind
+    commands:
+      - apk add --no-cache make
+      - make unit-tests
+    volumes:
+      - name: docker
+        path: /var/run/docker.sock
+
+  - name: Run API tests
+    image: docker:dind
+    commands:
+      - apk add --no-cache make util-linux
+      - make api-test
+    volumes:
+      - name: docker
+        path: /var/run/docker.sock
+
+volumes:
+  - name: docker
+    host:
+      path: /var/run/docker.sock

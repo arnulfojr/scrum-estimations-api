@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+
+set -e
+
+SCRIPT_DIRECTORY="$( cd "$( dirname "${0}" )" >/dev/null 2>&1 && pwd )"
+export SCRIPT_DIRECTORY
+# shellcheck disable=SC1090
+. "${SCRIPT_DIRECTORY}"/lib.sh
+
+usage() {
+  echo "
+  run.sh do <life-cycle_name>
+  "
+}
+
+if [ -z "${1}" ]; then
+  usage
+  exit 0
+fi
+
+command=
+
+case ${1} in
+  'do' ) shift
+         command="${1}"
+         ;;
+  * ) usage
+      exit 1
+      ;;
+esac
+
+echo "... Executing life-cycle ${command}"
+
+normalize_ci_variables
+
+execute_life_cyle "${command}"

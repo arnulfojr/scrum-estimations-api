@@ -1,6 +1,6 @@
 # Estimations API
 
-[![CircleCI](https://circleci.com/gh/arnulfojr/scrum-estimations-api.svg?style=svg)](https://circleci.com/gh/arnulfojr/scrum-estimations-api)
+[![Build Status](https://ci.moreandcoffee.com/api/badges/arnulfojr/scrum-estimations-api/status.svg?ref=refs/heads/master)](https://ci.moreandcoffee.com/arnulfojr/scrum-estimations-api)
 [![CodeFactor](https://www.codefactor.io/repository/github/arnulfojr/scrum-estimations-api/badge)](https://www.codefactor.io/repository/github/arnulfojr/scrum-estimations-api)
 
 Estimations API allows people to self host their scrum estimations service.
