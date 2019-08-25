@@ -14,6 +14,11 @@ In order to be able to estimate a task there's some requirements:
 - A session can have multiple tasks to be estimated
 - A user can then estimate tasks from the session
 
+## Getting the API docs
+
+Estimations API delivers the API docs in Swagger 2.0 through the `/docs/api/v1.json`.
+The Swagger docs can be visualized in the [Swagger UI editor](http://editor.swagger.io/).
+
 # Running tests
 
 ## Running locally

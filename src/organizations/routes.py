@@ -26,6 +26,26 @@ def handle_organization_not_found(error: Union[NotFound, UserNotFound]):
 
 @organizations_app.route('/<org_id>', methods=['GET'])
 def get_organizations(org_id: str):
+    """Get the organization.
+    ---
+    tags:
+        - Organizations
+    parameters:
+        - in: path
+          name: org_id
+          required: True
+          type: string
+          format: uuid
+    responses:
+        200:
+            description: Organization details
+            schema:
+                $ref: '#/definitions/Organization'
+        404:
+            description: Organization not found
+            schema:
+                $ref: '#/definitions/NotFound'
+    """
     organization = Organization.lookup(org_id)
 
     payload = organization.dump()
@@ -34,6 +54,29 @@ def get_organizations(org_id: str):
 
 @organizations_app.route('/', methods=['POST'])
 def create_organization():
+    """Creates an organization.
+    ---
+    tags:
+        - Organizations
+    parameters:
+        - in: body
+          required: True
+          name: body
+          schema:
+            properties:
+                name:
+                    type: string
+                    example: An Organization Name
+    responses:
+        201:
+            description: Creates the organizations
+            schema:
+                $ref: '#/definitions/OrganizationWithoutUsers'
+        400:
+            description: Invalid request
+            schema:
+                $ref: '#/definitions/ValidationErrors'
+    """
     payload = request.get_json()
 
     validator = Validator()
@@ -50,6 +93,31 @@ def create_organization():
 
 @organizations_app.route('/<org_id>', methods=['DELETE'])
 def delete_organization(org_id: str):
+    """Deletes an organization.
+    ---
+    tags:
+        - Organizations
+    parameters:
+        - in: path
+          name: org_id
+          type: string
+          format: uuid
+          required: True
+    definitions:
+        UnprocessableEntity:
+            type: object
+            properties:
+                message:
+                    type: string
+                    example: Please remove all users from the organization
+    responses:
+        204:
+            description: The organization was deleted
+        422:
+            description: The organization couldn't be deleted because it still has users related to it.
+            schema:
+                $ref: '#/definitions/UnprocessableEntity'
+    """
     organization = Organization.lookup(org_id)
 
     user_count = len(organization.users)
@@ -64,6 +132,34 @@ def delete_organization(org_id: str):
 
 @organizations_app.route('/<org_id>', methods=['PATCH'])
 def update_organization(org_id: str):
+    """Update the organization.
+    ---
+    tags:
+        - Organizations
+    parameters:
+        - in: path
+          name: org_id
+          required: True
+          type: string
+          format: uuid
+        - in: body
+          name: body
+          schema:
+            type: object
+            properties:
+                name:
+                    type: string
+                    example: Organization Name
+    responses:
+        200:
+            description: Organization was properly updated
+            schema:
+                $ref: '#/definitions/Organization'
+        400:
+            description: Bad input
+            schema:
+                $ref: '#/definitions/ValidationErrors'
+    """
     organization = Organization.lookup(org_id)
 
     data = request.get_json()
@@ -89,6 +185,39 @@ def update_organization(org_id: str):
 
 @organizations_app.route('/<org_id>/users', methods=['POST'])
 def add_user_to_organization(org_id: str):
+    """Add user to the organization.
+    ---
+    tags:
+        - Organizations
+        - Users
+    parameters:
+        - in: path
+          name: org_id
+          format: uuid
+          type: string
+          required: True
+    definitions:
+        OrganizationUserRelationship:
+            type: object
+            properties:
+                organization:
+                    $ref: '#/definitions/Organization'
+                user:
+                    $ref: '#/definitions/UserWithoutOrganization'
+    responses:
+        201:
+            description: Relationship created
+            schema:
+                $ref: '#/definitions/OrganizationUserRelationship'
+        400:
+            description: Bad input
+            schema:
+                $ref: '#/definitions/ValidationErrors'
+        404:
+            description: Organization or User not found
+            schema:
+                $ref: '#/definitions/NotFound'
+    """
     organization = Organization.lookup(org_id)
     payload = request.get_json()
 
@@ -116,6 +245,30 @@ def add_user_to_organization(org_id: str):
 
 @organizations_app.route('/<org_id>/users/<user_id>', methods=['DELETE'])
 def remove_user_from_organization(org_id: str, user_id: str):
+    """Remove the user from an organization.
+    ---
+    tags:
+        - Organizations
+        - Users
+    parameters:
+        - in: path
+          name: org_id
+          type: string
+          required: True
+          format: uuid
+        - in: path
+          name: user_id
+          required: True
+          type: string
+          format: uuid
+    responses:
+        204:
+            description: The user was unrelated to the organization.
+        404:
+            description: The user or the organization specified were not found.
+            schema:
+                $ref: '#/definitions/NotFound'
+    """
     Organization.lookup(org_id)
     user = User.lookup(user_id)
 
