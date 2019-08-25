@@ -7,8 +7,8 @@ if [ -z "${APP_DIR}" ]; then
   echo '-- APP_DIR was not set using PWD'
 fi
 
-pip install --disable-pip-version-check -r ${APP_DIR}/requirements-lint.txt
+pip install --disable-pip-version-check -r "${APP_DIR}"/requirements-lint.txt
 
-flake8 --show-source --statistics ${APP_DIR}
+flake8 --show-source --statistics "${APP_DIR}"
 
 echo '-- Linting succeded --'
