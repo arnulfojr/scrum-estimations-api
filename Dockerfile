@@ -24,6 +24,8 @@ COPY ./migrations/ ./migrations/
 
 COPY ./entrypoint.sh ./entrypoint.sh
 
+EXPOSE ${PORT}
+
 ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
 
 CMD ["serve"]

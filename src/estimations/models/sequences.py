@@ -258,7 +258,7 @@ class Value(peewee.Model):
                 try:
                     normalized_value = Decimal(val)
                 except TypeError:
-                    log_call = logger.error if val is not None else logger.warn
+                    log_call = logger.error if val is not None else logger.warning
                     log_call(f'Value({val}) was not Decimal and will use None')
                     normalized_value = None
 

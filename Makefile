@@ -1,7 +1,6 @@
 # Load .env file if existing
 -include .env
 
-export DOCKER_NETWORK_NAME=scrum-apis
 export UNIT_TESTER_IMAGE=estimations-api-tester
 
 install:
@@ -27,12 +26,11 @@ build-api-test:
 
 api-test:
 	@rm -fv docker-compose.override.yml
-	./api-tester/ci/prepare.sh
-	./api-tester/ci/run.sh
+	./ci/cli do api-tests
 .PHONY: api-test
 
 unit-tests:
-	@docker build --tag ${UNIT_TESTER_IMAGE} --file ./tests/Dockerfile --quiet .
+	@docker build --tag ${UNIT_TESTER_IMAGE} --file ./tests/Dockerfile .
 	@docker run --rm --volume ${PWD}/tests/out:/app/tests/out ${UNIT_TESTER_IMAGE} --junitxml=/app/tests/out/results.xml /app/tests
 .PHONY: unit-tests
 
