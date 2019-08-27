@@ -26,17 +26,11 @@ steps:
       - name: docker
         path: /var/run/docker.sock
 
-  - name: Build Image
+  - name: Build and Push Image
     image: docker:dind
     commands:
+      - apk add --no-cache make
       - make build-image
-    volumes:
-      - name: docker
-        path: /var/run/docker.sock
-
-  - name: Push Image
-    image: docker:dind
-    commands:
       - make push-image
     environment:
       DOCKER_USERNAME:
