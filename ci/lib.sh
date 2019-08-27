@@ -48,10 +48,19 @@ normalize_ci_variables() {
   export REPO_NAME
   echo "... Exported REPO_NAME=${REPO_NAME}"
 
-  ARTIFACT_TAG=
-  if [ -n "${CI_COMMIT_BRANCH}" ] && [ -n "${CI_COMMIT_SHA}" ]; then
+  BRANCH_NAME=
+  if [ -n "${CI_COMMIT_BRANCH}" ]; then
     normalized_branch_name="$( echo "${CI_COMMIT_BRANCH}" | cut -d'/' -f2 )"
-    ARTIFACT_TAG="${normalized_branch_name}-${CI_COMMIT_SHA}"
+    BRANCH_NAME="${normalized_branch_name}"
+  else
+    BRANCH_NAME='local'
+  fi
+  export BRANCH_NAME
+  echo "... Exported BRANCH_NAME=${BRANCH_NAME}"
+
+  ARTIFACT_TAG=
+  if [ -n "${BRANCH_NAME}" ] && [ -n "${CI_COMMIT_SHA}" ]; then
+    ARTIFACT_TAG="${BRANCH_NAME}-${CI_COMMIT_SHA}"
   else
     ARTIFACT_TAG='local'
   fi
