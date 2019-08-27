@@ -51,7 +51,6 @@ run-local-api-test:
 	@rm -fv docker-compose.override.yml
 	@docker-compose -f docker-compose.yml \
 		-f docker/docker-compose.tester.yml \
-		-f docker/docker-compose.tester.local.yml \
 		run --no-deps --use-aliases tester /app/tests
 .PHONY: run-local-api-test
 
