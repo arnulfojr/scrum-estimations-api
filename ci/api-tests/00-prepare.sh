@@ -35,8 +35,8 @@ if [ "${CHECK_CODE}" = '1' ]; then
   DB_CONTAINER_ID="$(docker run --rm --detach \
                                 --network="${DOCKER_NETWORK_ID}" \
                                 --network-alias=db \
-                                --env-file="${PWD}/env.d/db.env" \
-                                --env-file="${PWD}/env.d/app.db.env" \
+                                --env-file="${PROJECT_DIRECTORY}/env.d/db.env" \
+                                --env-file="${PROJECT_DIRECTORY}/env.d/app.db.env" \
                                 mysql:5.7)"
   echo '--- Ok, will now wait for the database to have an open TCP socket'
   set +e

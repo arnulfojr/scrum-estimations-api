@@ -6,8 +6,8 @@ echo '--- Launching the server'
 SERVER_CONTAINER_ID="$(docker run --rm --detach \
            --network="${DOCKER_NETWORK_ID}" \
            --network-alias=server \
-           --env-file="${PWD}/env.d/app.env" \
-           --env-file="${PWD}/env.d/app.db.env" \
+           --env-file="${PROJECT_DIRECTORY}/env.d/app.env" \
+           --env-file="${PROJECT_DIRECTORY}/env.d/app.db.env" \
            --label=Project=Estimations \
            "${DOCKER_IMAGE_NAME}":"${DOCKER_IMAGE_TAG}" serve)"
 export SERVER_CONTAINER_ID
