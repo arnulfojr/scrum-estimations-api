@@ -72,6 +72,7 @@ normalize_ci_variables() {
 assert_vars_exists() {
   for arg in "${@}"; do
     eval "val=\$${arg}"
+    # shellcheck disable=SC1009,SC2154
     if [ -z "${val}" ]; then
       echo "... Failed to assure that ${arg} was present in the environment"
       exit 1
@@ -79,4 +80,15 @@ assert_vars_exists() {
       echo "... ${arg} is present"
     fi
   done
+}
+
+source_service_env_file() {
+  if [ -f "${PROJECT_DIRECTORY}/service.env" ]; then
+    echo "... Importing ${PROJECT_DIRECTORY}/service.env"
+    cat "${PROJECT_DIRECTORY}"/service.env
+    # shellcheck disable=SC1090
+    . "${PROJECT_DIRECTORY}"/service.env
+  else
+    echo "... No ${PROJECT_DIRECTORY}/service.env file was found"
+  fi
 }

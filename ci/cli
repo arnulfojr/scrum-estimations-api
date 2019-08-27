@@ -31,6 +31,9 @@ esac
 
 echo "... Executing life-cycle ${command}"
 
+# export the env file from the service
+source_service_env_file
+
 normalize_ci_variables
 
 execute_life_cyle "${command}"
