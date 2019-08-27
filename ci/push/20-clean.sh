@@ -14,4 +14,6 @@ if [ -z "${DOCKER_IMAGE_TAG}" ]; then
 fi
 export DOCKER_IMAGE_TAG
 
+
+docker rmi "${DOCKER_IMAGE_NAME}":"${DOCKER_IMAGE_TAG}" || true
 docker rmi "${DOCKER_REPO_NAME}":"${DOCKER_IMAGE_TAG}" || true

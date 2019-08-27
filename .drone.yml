@@ -41,6 +41,12 @@ steps:
       - name: docker
         path: /var/run/docker.sock
 
+services:
+  - name: db
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: local_pwd
+
 volumes:
   - name: docker
     host:
