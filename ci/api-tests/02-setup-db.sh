@@ -8,12 +8,12 @@ echo '------ Creating schema/database'
 docker run --rm --network="${DOCKER_NETWORK_ID}" \
            --env-file="${PROJECT_DIRECTORY}/env.d/app.env" \
            --env-file="${PROJECT_DIRECTORY}/env.d/app.db.env" \
-           --label="Project=${PROJECT_NAME}" \
+           --label=Project="${PROJECT_NAME}" \
            "${REPO_NAME}":"${ARTIFACT_TAG}" create-db
 
 echo '------ Running migrations'
 docker run --rm --network="${DOCKER_NETWORK_ID}" \
            --env-file="${PROJECT_DIRECTORY}/env.d/app.env" \
            --env-file="${PROJECT_DIRECTORY}/env.d/app.db.env" \
-           --label="Project=${PROJECT_NAME}" \
+           --label=Project="${PROJECT_NAME}" \
            "${REPO_NAME}":"${ARTIFACT_TAG}" migrate
