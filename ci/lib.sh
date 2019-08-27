@@ -68,3 +68,15 @@ normalize_ci_variables() {
   export PROJECT_DIRECTORY
   echo "... Exported PROJECT_DIRECTORY=${PROJECT_DIRECTORY}"
 }
+
+assert_vars_exists() {
+  for arg in "${@}"; do
+    eval "val=\$${arg}"
+    if [ -z "${val}" ]; then
+      echo "... Failed to assure that ${arg} was present in the environment"
+      exit 1
+    else
+      echo "... ${arg} is present"
+    fi
+  done
+}

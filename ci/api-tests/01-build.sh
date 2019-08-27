@@ -2,12 +2,8 @@
 
 set -e
 
-DOCKER_IMAGE_NAME="${REPO_NAME}"
-export DOCKER_IMAGE_NAME
+assert_vars_exists REPO_NAME ARTIFACT_TAG
 
-DOCKER_IMAGE_TAG="${ARTIFACT_TAG}"
-export DOCKER_IMAGE_TAG
-
-docker build --tag "${DOCKER_IMAGE_NAME}":"${DOCKER_IMAGE_TAG}" \
+docker build --tag "${REPO_NAME}":"${ARTIFACT_TAG}" \
                                 --label=Project=Estimations \
                                 .

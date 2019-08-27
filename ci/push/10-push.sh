@@ -2,16 +2,10 @@
 
 set -e
 
-if [ -z "${DOCKER_IMAGE_NAME}" ]; then
-  DOCKER_IMAGE_NAME="${REPO_NAME}"
+assert_vars_exists REPO_NAME ARTIFACT_TAG
+
+if [ -z "${DOCKER_REPO_NAME}" ]; then
+  DOCKER_REPO_NAME="${DOCKER_USERNAME}/${REPO_NAME}"
 fi
-export DOCKER_IMAGE_NAME
 
-DOCKER_REPO_NAME="${DOCKER_USERNAME}/${DOCKER_IMAGE_NAME}"
-
-if [ -z "${DOCKER_IMAGE_TAG}" ]; then
-  DOCKER_IMAGE_TAG="${ARTIFACT_TAG}"
-fi
-export DOCKER_IMAGE_TAG
-
-docker push "${DOCKER_REPO_NAME}":"${DOCKER_IMAGE_TAG}"
+docker push "${DOCKER_REPO_NAME}":"${ARTIFACT_TAG}"
