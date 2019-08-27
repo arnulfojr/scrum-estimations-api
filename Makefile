@@ -63,11 +63,11 @@ clean:
 # CI commands
 
 build-image:
-    @./ci/cli do build
+	@./ci/cli do build
 .PHONY: build-image
 
 push-image:
-    @./ci/cli do push
+	@./ci/cli do push
 .PHONY: push-image
 
 api-test:
