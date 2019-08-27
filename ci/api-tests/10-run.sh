@@ -10,7 +10,7 @@ SERVER_CONTAINER_ID="$(docker run --rm --detach \
            --network-alias=server \
            --env-file="${PROJECT_DIRECTORY}/env.d/app.env" \
            --env-file="${PROJECT_DIRECTORY}/env.d/app.db.env" \
-           --label=Project=Estimations \
+           --label=Project="${PROJECT_NAME}" \
            "${REPO_NAME}":"${ARTIFACT_TAG}" serve)"
 export SERVER_CONTAINER_ID
 

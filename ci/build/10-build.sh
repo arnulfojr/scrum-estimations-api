@@ -2,7 +2,8 @@
 
 set -e
 
-assert_vars_exists REPO_NAME ARTIFACT_TAG
+assert_vars_exists REPO_NAME ARTIFACT_TAG PROJECT_NAME
 
 docker build --tag "${REPO_NAME}":"${ARTIFACT_TAG}" \
-             --label=Project=Estimations .
+             --no-cache \
+             --label="Project=${PROJECT_NAME}" .

@@ -33,4 +33,7 @@ echo "... Executing life-cycle ${command}"
 
 normalize_ci_variables
 
+# export the env file from the service
+source_service_env_file
+
 execute_life_cyle "${command}"

@@ -35,6 +35,8 @@ if [ "${CHECK_CODE}" = '1' ]; then
   DB_CONTAINER_ID="$(docker run --rm --detach \
                                 --network="${DOCKER_NETWORK_ID}" \
                                 --network-alias=db \
+                                --label=Project="${PROJECT_NAME}" \
+                                --label=Application=database \
                                 --env-file="${PROJECT_DIRECTORY}/env.d/db.env" \
                                 --env-file="${PROJECT_DIRECTORY}/env.d/app.db.env" \
                                 mysql:5.7)"
