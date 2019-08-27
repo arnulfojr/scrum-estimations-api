@@ -44,6 +44,7 @@ steps:
 services:
   - name: db
     image: mysql:5.7
+    pull: always
     environment:
       MYSQL_ROOT_PASSWORD: local_pwd
 
