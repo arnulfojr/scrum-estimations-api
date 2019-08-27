@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+set -e
+
+assert_vars_exists REPO_NAME ARTIFACT_TAG DOCKER_USERNAME
+
+DOCKER_REPO_NAME="${DOCKER_USERNAME}/${REPO_NAME}"
+export DOCKER_REPO_NAME
+
+docker tag "${REPO_NAME}":"${ARTIFACT_TAG}" "${DOCKER_REPO_NAME}":"${ARTIFACT_TAG}"

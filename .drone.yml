@@ -26,6 +26,28 @@ steps:
       - name: docker
         path: /var/run/docker.sock
 
+  - name: Build and Push Image
+    image: docker:dind
+    commands:
+      - apk add --no-cache make
+      - make build-image
+      - make push-image
+    environment:
+      DOCKER_USERNAME:
+        from_secret: DOCKER_USERNAME
+      DOCKER_PASSWORD:
+        from_secret: DOCKER_PASSWORD
+    volumes:
+      - name: docker
+        path: /var/run/docker.sock
+
+services:
+  - name: db
+    image: mysql:5.7
+    pull: always
+    environment:
+      MYSQL_ROOT_PASSWORD: local_pwd
+
 volumes:
   - name: docker
     host:

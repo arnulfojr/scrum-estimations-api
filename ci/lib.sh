@@ -50,7 +50,8 @@ normalize_ci_variables() {
 
   ARTIFACT_TAG=
   if [ -n "${CI_COMMIT_BRANCH}" ] && [ -n "${CI_COMMIT_SHA}" ]; then
-    ARTIFACT_TAG="${CI_COMMIT_BRANCH}-${CI_COMMIT_SHA}"
+    normalized_branch_name="$( echo "${CI_COMMIT_BRANCH}" | cut -d'/' -f2 )"
+    ARTIFACT_TAG="${normalized_branch_name}-${CI_COMMIT_SHA}"
   else
     ARTIFACT_TAG='local'
   fi
@@ -66,4 +67,16 @@ normalize_ci_variables() {
   fi
   export PROJECT_DIRECTORY
   echo "... Exported PROJECT_DIRECTORY=${PROJECT_DIRECTORY}"
+}
+
+assert_vars_exists() {
+  for arg in "${@}"; do
+    eval "val=\$${arg}"
+    if [ -z "${val}" ]; then
+      echo "... Failed to assure that ${arg} was present in the environment"
+      exit 1
+    else
+      echo "... ${arg} is present"
+    fi
+  done
 }

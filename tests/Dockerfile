@@ -23,10 +23,6 @@ ENV PYTHONPATH "${APP_DIR}/src"
 COPY ./src/ ./src/
 COPY ./tests/ ./tests/
 
-COPY ./migrations/ ./migrations/
-
-COPY ./entrypoint.sh ./entrypoint.sh
-
 ENTRYPOINT ["/usr/local/bin/pytest"]
 
 CMD ["--help"]
