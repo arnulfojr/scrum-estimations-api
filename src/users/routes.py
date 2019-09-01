@@ -4,7 +4,7 @@ from cerberus import Validator
 from flask import jsonify, make_response, request
 
 from users.models import User
-from users.schemas import CREATE_USER_SCHEMA
+from users.schemas import CREATE_USER_SCHEMA, EMAIL_SCHEMA
 
 from .app import users_app
 from .exceptions import NotFound, UserAlreadyExists
@@ -24,7 +24,43 @@ def handle_user_already_exists_error(error: UserAlreadyExists):
     }), HTTPStatus.UNPROCESSABLE_ENTITY)
 
 
-@users_app.route('/<user_id>', methods=['GET'])
+@users_app.route('/', methods=['GET'])
+def search_user():
+    """Search for a user.
+    ---
+    tags:
+    - Users
+    parameters:
+        - in: query
+          description: Email from the user
+          format: email
+          name: email
+          required: True
+          type: string
+    responses:
+        200:
+            description: User list
+            schema:
+                $ref: '#/definitions/UserWithoutOrganization'
+        400:
+            description: Invalid request
+            schema:
+                $ref: '#/definitions/ValidationErrors'
+        404:
+            description: Not Found
+            schema:
+                $ref: '#/definitions/NotFound'
+    """
+    email = request.args.get('email')
+    validator = Validator()
+    if not validator.validate({'email': email}, EMAIL_SCHEMA):
+        return make_response(jsonify(validator.errors), HTTPStatus.BAD_REQUEST)
+
+    user = User.get_by_email(email)
+    return make_response(jsonify(user.dump(with_organization=False)), HTTPStatus.OK)
+
+
+@users_app.route('/<uuid:user_id>', methods=['GET'])
 def get_user(user_id: str):
     """Get the user's information.
     ---
@@ -75,7 +111,7 @@ def get_user(user_id: str):
     return make_response(jsonify(user.dump()), HTTPStatus.OK)
 
 
-@users_app.route('/<user_id>/organization', methods=['GET'])
+@users_app.route('/<uuid:user_id>/organization', methods=['GET'])
 def get_user_with_organizations(user_id: str):
     """Returns the user's organization.
     ---

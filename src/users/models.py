@@ -34,7 +34,7 @@ class User(peewee.Model):
 
     name = peewee.CharField(default=DEFAULT_NAME)
 
-    password = peewee.CharField()
+    password = peewee.CharField(null=True, default=None)
 
     role = peewee.CharField(default=ROLES[0])
 
@@ -57,6 +57,16 @@ class User(peewee.Model):
             user = user_query.get()
         except cls.DoesNotExist as e:
             raise NotFound(f'User with ID {identifier} was not found', e) from e
+        else:
+            return user
+
+    @classmethod
+    def get_by_email(cls, email: str) -> 'User':
+        user_query = cls.select().where(cls.email == email)
+        try:
+            user = user_query.get()
+        except cls.DoesNotExist as e:
+            raise NotFound(f'User with email {email} was not found', e) from e
         else:
             return user
 

@@ -1,5 +1,12 @@
 import yaml
 
+_EMAIL_SCHEMA = """
+email:
+    type: string
+    regex: '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$'
+"""
+EMAIL_SCHEMA = yaml.safe_load(_EMAIL_SCHEMA)
+
 
 _CREATE_USER_SCHEMA = """
 email:
@@ -12,7 +19,7 @@ name:
     required: True
 password:
     type: string
-    required: True
+    required: False
     empty: False
 role:
     type: string

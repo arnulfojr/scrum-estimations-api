@@ -8,7 +8,7 @@ def upgrade(migrator):
         table.char('email', max_length=255, unique=True)
         table.char('name', max_length=255)
         table.char('role', max_length=128)
-        table.char('password', max_length=255)
+        table.char('password', max_length=255, null=True)
         table.foreign_key('uuid', 'organization_id',
                           references='organizations.id',
                           on_delete='SET NULL',
