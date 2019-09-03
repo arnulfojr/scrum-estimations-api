@@ -6,6 +6,7 @@ def upgrade(migrator):
         table.uuid('id', constraints=['PRIMARY KEY'])
         table.integer('registered_on')
         table.char('name', max_length=255)
+        table.add_index(('name',), unique=False)
 
 
 def downgrade(migrator):

@@ -24,8 +24,35 @@ def handle_organization_not_found(error: Union[NotFound, UserNotFound]):
     )
 
 
+@organizations_app.route('/', methods=['GET'])
+def get_organizations():
+    """Get all the organizations.
+    ---
+    tags:
+        - Organizations
+    parameters:
+        - in: query
+          name: name
+          required: False
+          type: string
+    responses:
+        200:
+            description: Organizations
+            schema:
+                $ref: '#/definitions/Organizations'
+    """
+    name = request.args.get('name')
+    if not name:
+        return make_response(jsonify([]), HTTPStatus.OK)
+
+    organizations = Organization.search(name)
+    return make_response(jsonify(
+        [org.dump() for org in organizations],
+    ), HTTPStatus.OK)
+
+
 @organizations_app.route('/<org_id>', methods=['GET'])
-def get_organizations(org_id: str):
+def get_organization(org_id: str):
     """Get the organization.
     ---
     tags:
@@ -196,6 +223,18 @@ def add_user_to_organization(org_id: str):
           format: uuid
           type: string
           required: True
+        - in: body
+          name: body
+          required: True
+          schema:
+            type: object
+            properties:
+                user:
+                    type: object
+                    properties:
+                        id:
+                            type: string
+                            format: uuid
     definitions:
         OrganizationUserRelationship:
             type: object

@@ -1,5 +1,6 @@
 """Organization models."""
 from datetime import datetime
+from typing import List
 from uuid import uuid4
 
 import peewee
@@ -16,7 +17,7 @@ class Organization(peewee.Model):
     """
     id = peewee.UUIDField(primary_key=True, default=uuid4)
 
-    name = peewee.CharField(null=False)
+    name = peewee.CharField(null=False, index=True)
 
     registered_on = peewee.TimestampField(default=datetime.now)
 
@@ -35,6 +36,11 @@ class Organization(peewee.Model):
             raise NotFound(f'Organization with ID {identifier} was not found', e) from e
         else:
             return instance
+
+    @classmethod
+    def search(cls, name: str) -> List['Organization']:
+        query = cls.select().where(cls.name.contains(name))
+        return list(query)
 
     @classmethod
     def create_from(cls, data: dict) -> 'Organization':

@@ -25,8 +25,6 @@ def clean_up(exc):
 
 
 # - Add global plugins - #
-CORS(app)
-
 Swagger(app, config={
     'headers': [],
     'specs': [
@@ -55,6 +53,8 @@ Swagger(app, config={
         "https",
     ],
 })
+
+CORS(app)
 
 # - register Blueprints - #
 app.register_blueprint(health_app, url_prefix='/selfz')

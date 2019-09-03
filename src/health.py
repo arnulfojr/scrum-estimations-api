@@ -1,9 +1,13 @@
 from http import HTTPStatus
 
 from flask import Blueprint, jsonify, make_response
+from flask_cors import CORS
 
 
 health_app = Blueprint('health_app', __name__)
+
+
+CORS(health_app)
 
 
 @health_app.route('/healthz', methods=['GET'])
