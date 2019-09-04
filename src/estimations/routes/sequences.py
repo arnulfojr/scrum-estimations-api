@@ -183,6 +183,19 @@ def create_values_for_sequence(name: str):
           name: name
           type: string
           required: True
+        - in: body
+          name: body
+          required: True
+          schema:
+            type: array
+            items:
+                type: object
+                properties:
+                    name:
+                        type: string
+                    value:
+                        type: number
+                        example: 2.5
     definitions:
         Values:
             type: array
